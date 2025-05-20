@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Cafe - Login</title>
+    <style>
+        /* Force dark mode styling */
+        html,
+        body {
+            background-color: #121212 !important;
+            color: #ffffff !important;
+        }
+
+        :root {
+            --primary-color: #6c63ff;
+            --primary-hover: #5a52d5;
+            --bg-dark: #121212;
+            --card-dark: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --error-color: #ff5252;
+            --success-color: #4caf50;
+            --input-bg: #2c2c2c;
+            --input-border: #3f3f3f;
+        }
+
+        /* Reset and Base Styles */
+        * {
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        html,
+        body {
+            height: 100% !important;
+            width: 100% !important;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif !important;
+            background-color: var(--bg-dark) !important;
+            color: var(--text-primary) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
+
+        .container {
+            width: 90% !important;
+            max-width: 400px !important;
+            padding: 30px !important;
+            background-color: var(--card-dark) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        .header {
+            text-align: center !important;
+            margin-bottom: 30px !important;
+        }
+
+        .logo-text {
+            font-size: 32px !important;
+            font-weight: 700 !important;
+            margin-bottom: 15px !important;
+        }
+
+        h1 {
+            font-size: 24px !important;
+            font-weight: 600 !important;
+            margin-bottom: 10px !important;
+            color: var(--primary-color) !important;
+        }
+
+        h2 {
+            color: var(--text-primary) !important;
+            font-size: 20px !important;
+            font-weight: 500 !important;
+            margin-bottom: 20px !important;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px !important;
+        }
+
+        label {
+            display: block !important;
+            margin-bottom: 8px !important;
+            font-weight: 500 !important;
+            color: var(--text-secondary) !important;
+            font-size: 14px !important;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="email"] {
+            width: 100% !important;
+            padding: 12px !important;
+            border: 1px solid var(--input-border) !important;
+            border-radius: 8px !important;
+            background-color: var(--input-bg) !important;
+            color: var(--text-primary) !important;
+            font-size: 16px !important;
+        }
+
+        input:focus {
+            border-color: var(--primary-color) !important;
+            outline: none !important;
+            box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.25) !important;
+        }
+
+        button {
+            width: 100% !important;
+            background-color: var(--primary-color) !important;
+            color: white !important;
+            border: none !important;
+            padding: 14px !important;
+            border-radius: 8px !important;
+            cursor: pointer !important;
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s !important;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover) !important;
+        }
+
+        button:disabled {
+            background-color: #444444 !important;
+            cursor: not-allowed !important;
+        }
+
+        .auth-switcher {
+            margin-top: 20px !important;
+            text-align: center !important;
+            color: var(--text-secondary) !important;
+            font-size: 15px !important;
+        }
+
+        .auth-switcher a {
+            color: var(--primary-color) !important;
+            cursor: pointer !important;
+            text-decoration: none !important;
+            font-weight: 500 !important;
+        }
+
+        .error-message {
+            color: var(--error-color) !important;
+            margin-top: 15px !important;
+            font-size: 14px !important;
+            text-align: center !important;
+        }
+
+        .success-message {
+            color: var(--success-color) !important;
+            margin-top: 15px !important;
+            font-size: 14px !important;
+            text-align: center !important;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        footer {
+            margin-top: 30px !important;
+            text-align: center !important;
+            color: var(--text-secondary) !important;
+            font-size: 12px !important;
+        }
+
+        /* Loading animation */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1) !important;
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50% !important;
+            border-left-color: var(--primary-color) !important;
+            animation: spin 1s linear infinite !important;
+            margin: 20px auto !important;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Loading view */
+        #loading-view {
+            text-align: center !important;
+        }
+
+        #loading-view p {
+            margin: 10px 0 !important;
+            color: var(--text-secondary) !important;
+        }
+
+        /* Dashboard elements */
+        .user-info-bar {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-bottom: 20px !important;
+            padding: 10px 0 !important;
+            border-bottom: 1px solid var(--input-border) !important;
+        }
+
+        .user-info-bar .user-info {
+            font-weight: bold !important;
+        }
+
+        .user-info-bar .credit-info {
+            color: var(--success-color) !important;
+        }
+
+        /* Dashboard Stats */
+        .dashboard-stats {
+            display: flex !important;
+            justify-content: center !important;
+            margin-bottom: 30px !important;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #6c63ff 0%, #5a52d5 100%) !important;
+            border-radius: 10px !important;
+            padding: 20px !important;
+            text-align: center !important;
+            width: 100% !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        .stat-label {
+            font-size: 16px !important;
+            color: rgba(255, 255, 255, 0.8) !important;
+            margin-bottom: 10px !important;
+        }
+
+        .stat-value {
+            font-size: 36px !important;
+            font-weight: bold !important;
+            color: white !important;
+        }
+
+        /* Session Selection */
+        .session-selection {
+            background-color: rgba(30, 30, 30, 0.7) !important;
+            border-radius: 10px !important;
+            padding: 20px !important;
+            margin-bottom: 30px !important;
+        }
+
+        .session-selection h3 {
+            color: var(--primary-color) !important;
+            margin-bottom: 15px !important;
+            font-size: 20px !important;
+        }
+
+        .session-selection p {
+            color: var(--text-secondary) !important;
+            margin-bottom: 20px !important;
+        }
+
+        .duration-options {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 10px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .duration-option {
+            background-color: var(--input-bg) !important;
+            border: 1px solid var(--input-border) !important;
+            border-radius: 8px !important;
+            padding: 15px !important;
+            text-align: center !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+        }
+
+        .duration-option:hover {
+            border-color: var(--primary-color) !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .duration-option.selected {
+            background-color: rgba(108, 99, 255, 0.2) !important;
+            border-color: var(--primary-color) !important;
+        }
+
+        .duration-title {
+            font-weight: bold !important;
+            margin-bottom: 5px !important;
+        }
+
+        .duration-price {
+            color: var(--text-secondary) !important;
+            font-size: 14px !important;
+        }
+
+        .custom-duration {
+            background-color: var(--input-bg) !important;
+            border-radius: 8px !important;
+            padding: 15px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .custom-duration h4 {
+            margin-bottom: 10px !important;
+            color: var(--text-secondary) !important;
+        }
+
+        .custom-duration-controls {
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        .custom-duration-controls input {
+            width: 80px !important;
+            padding: 8px !important;
+            border-radius: 4px !important;
+            border: 1px solid var(--input-border) !important;
+            background-color: var(--card-dark) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .custom-duration-controls .unit {
+            margin: 0 10px !important;
+            color: var(--text-secondary) !important;
+        }
+
+        #custom-price {
+            margin-left: auto !important;
+            font-weight: bold !important;
+            color: var(--primary-color) !important;
+        }
+
+        /* Transaction History */
+        .transaction-history {
+            background-color: rgba(30, 30, 30, 0.7) !important;
+            border-radius: 10px !important;
+            padding: 20px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .transaction-history h3 {
+            color: var(--primary-color) !important;
+            margin-bottom: 15px !important;
+            font-size: 20px !important;
+        }
+
+        .transaction-list {
+            max-height: 200px !important;
+            overflow-y: auto !important;
+        }
+
+        .transaction-item {
+            padding: 10px !important;
+            border-bottom: 1px solid var(--input-border) !important;
+            display: flex !important;
+            justify-content: space-between !important;
+        }
+
+        .transaction-empty {
+            color: var(--text-secondary) !important;
+            text-align: center !important;
+            padding: 20px !important;
+        }
+
+        .transaction-date {
+            font-size: 12px !important;
+            color: var(--text-secondary) !important;
+        }
+
+        .transaction-amount {
+            font-weight: bold !important;
+        }
+
+        .transaction-amount.positive {
+            color: var(--success-color) !important;
+        }
+
+        .transaction-amount.negative {
+            color: var(--error-color) !important;
+        }
+
+        .logout-container {
+            margin-top: 20px !important;
+        }
+
+        /* Session View Updates */
+        #session-view {
+            text-align: center !important;
+        }
+
+        .time-remaining {
+            font-size: 48px !important;
+            font-weight: bold !important;
+            margin: 30px 0 !important;
+            color: var(--primary-color) !important;
+        }
+
+        .session-info {
+            margin-bottom: 20px !important;
+        }
+
+        .session-actions {
+            display: flex !important;
+            justify-content: center !important;
+            gap: 10px !important;
+            margin-top: 30px !important;
+        }
+
+        /* Button Variations */
+        .secondary-button {
+            background-color: #3a3a3a !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--input-border) !important;
+        }
+
+        .secondary-button:hover {
+            background-color: #4a4a4a !important;
+        }
+
+        .warning-button {
+            background-color: #d32f2f !important;
+            color: white !important;
+        }
+
+        .warning-button:hover {
+            background-color: #b71c1c !important;
+        }
+
+        /* Session Extension */
+        .session-extension {
+            background-color: rgba(30, 30, 30, 0.7) !important;
+            border-radius: 10px !important;
+            padding: 20px !important;
+            margin-bottom: 30px !important;
+            margin-top: 30px !important;
+        }
+
+        .session-extension h3 {
+            color: var(--primary-color) !important;
+            margin-bottom: 15px !important;
+            font-size: 20px !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-text">☕ WiFi Cafe</div>
+            <h1>Cafe Management System</h1>
+        </div>
+
+        <!-- Loading View -->
+        <div id="loading-view" class="hidden">
+            <h2>Loading</h2>
+            <div class="spinner"></div>
+            <p>Checking for existing session...</p>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-view">
+            <h2>Login</h2>
+            <div class="form-group">
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" placeholder="Enter your password">
+            </div>
+            <button id="login-button">Login</button>
+            <div id="login-message" class="error-message hidden"></div>
+            <div class="auth-switcher">
+                Don't have an account? <a id="switch-to-signup">Sign up</a>
+            </div>
+        </div>
+
+        <!-- Signup Form - Hidden by default -->
+        <div id="signup-view" class="hidden">
+            <h2>Create Account</h2>
+            <div class="form-group">
+                <label for="signup-email">Email</label>
+                <input type="email" id="signup-email" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label for="signup-username">Username</label>
+                <input type="text" id="signup-username" placeholder="Choose a username">
+            </div>
+            <div class="form-group">
+                <label for="signup-password">Password</label>
+                <input type="password" id="signup-password" placeholder="Create a password">
+            </div>
+            <div class="form-group">
+                <label for="signup-confirm-password">Confirm Password</label>
+                <input type="password" id="signup-confirm-password" placeholder="Confirm your password">
+            </div>
+            <button id="signup-button">Create Account</button>
+            <div id="signup-message" class="error-message hidden"></div>
+            <div class="auth-switcher">
+                Already have an account? <a id="switch-to-login">Login</a>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="hidden">
+            <div class="user-info-bar">
+                <span id="user-info">User</span>
+                <span id="credit-display">0 credits</span>
+            </div>
+            <h2>Welcome to WiFi Cafe</h2>
+
+            <div class="dashboard-stats">
+                <div class="stat-box">
+                    <div class="stat-label">Your Credits</div>
+                    <div id="dashboard-credits" class="stat-value">0</div>
+                </div>
+            </div>
+
+            <div class="session-selection">
+                <h3>Start New Session</h3>
+                <p>Select a duration for your session:</p>
+
+                <div class="duration-options">
+                    <div class="duration-option" data-minutes="30" data-credits="15">
+                        <div class="duration-title">30 Minutes</div>
+                        <div class="duration-price">15 Credits</div>
+                    </div>
+                    <div class="duration-option" data-minutes="60" data-credits="25">
+                        <div class="duration-title">1 Hour</div>
+                        <div class="duration-price">25 Credits</div>
+                    </div>
+                    <div class="duration-option" data-minutes="120" data-credits="45">
+                        <div class="duration-title">2 Hours</div>
+                        <div class="duration-price">45 Credits</div>
+                    </div>
+                </div>
+
+                <div class="custom-duration">
+                    <h4>Custom Duration</h4>
+                    <div class="custom-duration-controls">
+                        <input type="number" id="custom-duration" min="15" max="480" step="15" value="15">
+                        <span class="unit">minutes</span>
+                        <span id="custom-price">0 credits</span>
+                    </div>
+                </div>
+
+                <button id="start-session-btn" disabled>Start Session</button>
+                <div id="session-message" class="error-message hidden"></div>
+            </div>
+
+            <div class="transaction-history">
+                <h3>Recent Transactions</h3>
+                <div id="transaction-list" class="transaction-list">
+                    <div class="transaction-empty">No recent transactions</div>
+                </div>
+            </div>
+
+            <div class="form-group logout-container">
+                <button id="logout-button">Logout</button>
+            </div>
+        </div>
+
+        <!-- Session View -->
+        <div id="session-view" class="hidden">
+            <div class="user-info-bar">
+                <span id="session-user-info">User</span>
+                <span id="session-credit-display">0 credits</span>
+            </div>
+            <h2>Active Session</h2>
+
+            <div class="time-remaining" id="time-remaining">00:00:00</div>
+
+            <div class="session-info">
+                <p>Your session will end at <span id="session-end-time">--:--</span></p>
+            </div>
+
+            <div class="session-extension">
+                <h3>Extend Your Session</h3>
+                <p>Add more time to your current session:</p>
+
+                <div class="duration-options">
+                    <div class="duration-option" data-minutes="15" data-credits="8">
+                        <div class="duration-title">15 Minutes</div>
+                        <div class="duration-price">8 Credits</div>
+                    </div>
+                    <div class="duration-option" data-minutes="30" data-credits="15">
+                        <div class="duration-title">30 Minutes</div>
+                        <div class="duration-price">15 Credits</div>
+                    </div>
+                    <div class="duration-option" data-minutes="60" data-credits="25">
+                        <div class="duration-title">1 Hour</div>
+                        <div class="duration-price">25 Credits</div>
+                    </div>
+                </div>
+
+                <button id="extend-session-btn" disabled>Extend Session</button>
+                <div id="extension-message" class="error-message hidden"></div>
+            </div>
+
+            <div class="session-actions">
+                <button id="minimize-btn" class="secondary-button">Minimize</button>
+                <button id="end-session-btn" class="warning-button">End Session</button>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>WiFi Cafe Management System &copy; 2023</p>
+    </footer>
+
+    <script src="index.js"></script>
+</body>
+
+</html>

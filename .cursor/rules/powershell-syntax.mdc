@@ -1,0 +1,11 @@
+---
+description: Powershell syntax commands
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+"Make sure all commands are for the windows Powershell and follow that syntax because that is what i am using"

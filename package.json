@@ -1,0 +1,43 @@
+{
+	"name": "cafe-management-electron",
+	"version": "1.0.0",
+	"description": "A comprehensive WiFi cafe management software developed as a university capstone project. This system enables efficient management of computer access based on user credits, with real-time monitoring and reporting capabilities.",
+	"main": "src/main/main.js",
+	"scripts": {
+		"start": "electron .",
+		"dev": "set NODE_ENV=development && electron .",
+		"build": "electron-builder",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"test:supabase": "node src/main/supabase-test.js",
+		"setup:supabase": "node src/main/setup-supabase-db.js"
+	},
+	"keywords": [
+		"cafe",
+		"management",
+		"wifi",
+		"electron",
+		"kiosk"
+	],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs",
+	"devDependencies": {
+		"electron": "^36.2.1",
+		"electron-builder": "^26.0.12"
+	},
+	"build": {
+		"appId": "com.cafemanagementsystem.app",
+		"productName": "Cafe Management System",
+		"directories": {
+			"output": "dist"
+		},
+		"win": {
+			"target": "nsis"
+		}
+	},
+	"dependencies": {
+		"@supabase/supabase-js": "^2.38.5",
+		"dotenv": "^16.3.1",
+		"electron-squirrel-startup": "^1.0.1"
+	}
+}
