@@ -91,25 +91,25 @@ This project aims to develop a WiFi cafe management software for a university ca
   - [x] Implement minimize to tray feature
   - [x] Create background timer process
   - [x] Test system access during minimized state
-- [ ] 6.3 Develop session monitoring
+- [x] 6.3 Develop session monitoring
   - [x] Implement countdown timer
-  - [ ] Create session end trigger
-  - [ ] Build session extension logic
+  - [x] Create session end trigger
+  - [x] Build session extension logic
 
 ## Phase 7: Session Expiration & System Control
 
-- [ ] 7.1 Implement session expiration handling
-  - [ ] Create full-screen countdown overlay
-  - [ ] Build extension option interface
-  - [ ] Implement session termination logic
-- [ ] 7.2 Develop computer restart functionality
-  - [ ] Create system command execution
-  - [ ] Implement safe restart procedure
-  - [ ] Test restart functionality
-- [ ] 7.3 Add session extension features
-  - [ ] Design extension UI
-  - [ ] Implement additional credit deduction
-  - [ ] Update session duration in database
+- [x] 7.1 Implement session expiration handling
+  - [x] Create full-screen countdown overlay
+  - [x] Build extension option interface
+  - [x] Implement session termination logic
+- [x] 7.2 Develop computer restart functionality
+  - [x] Create system command execution
+  - [x] Implement safe restart procedure
+  - [x] Test restart functionality
+- [x] 7.3 Add session extension features
+  - [x] Design extension UI
+  - [x] Implement additional credit deduction
+  - [x] Update session duration in database
 
 ## Phase 8: Offline Support & Synchronization
 

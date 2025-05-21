@@ -29,6 +29,7 @@ const validSendChannels = [
 	"getComputers",
 	"getTransactionHistory",
 	"sessionExpired",
+	"restartComputer",
 ];
 
 // Channels the renderer process can receive messages from

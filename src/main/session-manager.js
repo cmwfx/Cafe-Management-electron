@@ -64,7 +64,7 @@ class SessionManager {
 			// Calculate end time
 			const startTime = new Date();
 			const endTime = new Date(
-				startTime.getTime() + durationMinutes * 60 * 1000
+				startTime.getTime() + durationMinutes * 60 * 1000 + 10000
 			);
 			console.log(
 				`Session period: ${startTime.toISOString()} to ${endTime.toISOString()}`
@@ -254,10 +254,10 @@ class SessionManager {
 				};
 			}
 
-			// Calculate new end time
+			// Calculate new end time - add a buffer of 10 seconds to account for processing delay
 			const currentEndTime = new Date(session.end_time);
 			const newEndTime = new Date(
-				currentEndTime.getTime() + durationMinutes * 60 * 1000
+				currentEndTime.getTime() + durationMinutes * 60 * 1000 + 10000
 			);
 
 			// Start transaction

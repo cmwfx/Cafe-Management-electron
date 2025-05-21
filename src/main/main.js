@@ -590,8 +590,101 @@ const setupIpcHandlers = () => {
 			}
 		}
 
+		// Force the window to come back to full screen if minimized
+		if (mainWindow) {
+			if (mainWindow.isMinimized()) {
+				mainWindow.restore();
+			}
+
+			// Force full screen mode
+			mainWindow.setFullScreen(true);
+
+			// Notify the renderer to hide minimize button and show session expired UI
+			mainWindow.webContents.send("sessionExpiredUI");
+		}
+
 		// Show notification
 		sendNotification("Your session has expired!");
+	});
+
+	// Handle restartComputer event
+	ipcMain.on("restartComputer", async (event) => {
+		console.log("Restart computer event received");
+
+		// If we have a current user, end their active session
+		const currentUser = authManager.getCurrentUser();
+		if (currentUser) {
+			const { success, sessionData } = await sessionManager.getActiveSession(
+				currentUser.id
+			);
+
+			if (success && sessionData) {
+				// End the session
+				await sessionManager.endSession(sessionData.id, currentUser.id);
+			}
+
+			// Log the user out
+			await authManager.logout();
+		}
+
+		// Show confirmation dialog
+		dialog
+			.showMessageBox({
+				type: "warning",
+				title: "Computer Restart",
+				message: "The computer will restart in 10 seconds.",
+				buttons: ["OK"],
+			})
+			.then(() => {
+				// Execute restart command after a short delay
+				setTimeout(() => {
+					try {
+						// Execute restart command based on platform
+						const { exec } = require("child_process");
+						if (process.platform === "win32") {
+							// Use the /f flag to force applications to close and set a 5 second timer
+							exec("shutdown /r /t 5 /f", (error) => {
+								if (error) {
+									console.error("Failed to restart computer:", error);
+									sendNotification(
+										"Failed to restart computer. Please restart manually."
+									);
+								} else {
+									console.log("Computer restart command executed successfully");
+									sendNotification("Computer will restart in 5 seconds");
+								}
+							});
+						} else if (process.platform === "linux") {
+							exec("sudo shutdown -r now", (error) => {
+								if (error) {
+									console.error("Failed to restart computer:", error);
+									sendNotification(
+										"Failed to restart computer. Please restart manually."
+									);
+								} else {
+									console.log("Computer restart command executed successfully");
+								}
+							});
+						} else if (process.platform === "darwin") {
+							exec("sudo shutdown -r now", (error) => {
+								if (error) {
+									console.error("Failed to restart computer:", error);
+									sendNotification(
+										"Failed to restart computer. Please restart manually."
+									);
+								} else {
+									console.log("Computer restart command executed successfully");
+								}
+							});
+						}
+					} catch (error) {
+						console.error("Error executing restart command:", error);
+						sendNotification(
+							"Failed to restart computer. Please restart manually."
+						);
+					}
+				}, 5000); // 5 second delay before executing restart
+			});
 	});
 
 	// Send notification to renderer process (example of main->renderer communication)

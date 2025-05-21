@@ -499,14 +499,20 @@ const setupSessionExtension = () => {
 
 			// Ask for confirmation
 			const confirmEnd = confirm(
-				"Are you sure you want to end your session? This will not refund your credits."
+				"Are you sure you want to end your session and restart the computer? All unsaved work will be lost."
 			);
 
 			if (confirmEnd && window.api && activeSession) {
+				// First end the session
 				window.api.send("endSession", {
 					sessionId: activeSession.id,
 					userId: userData.id,
 				});
+
+				// Then restart the computer
+				setTimeout(() => {
+					window.api.send("restartComputer");
+				}, 1000);
 			}
 		});
 	}
@@ -537,6 +543,16 @@ const startSessionCountdown = () => {
 			// Handle session expiration
 			if (window.api) {
 				window.api.send("sessionExpired");
+
+				// Disable minimize button if it exists
+				const minimizeButton = document.getElementById("minimize-button");
+				if (minimizeButton) {
+					minimizeButton.classList.add("hidden");
+					minimizeButton.disabled = true;
+				}
+
+				// Show session expired overlay
+				showSessionExpiredOverlay();
 			}
 			return;
 		}
@@ -562,6 +578,282 @@ const startSessionCountdown = () => {
 
 	// Update every second
 	window.countdownInterval = setInterval(updateTimeRemaining, 1000);
+};
+
+// Show session expired overlay
+const showSessionExpiredOverlay = () => {
+	// Create overlay if it doesn't exist
+	let overlay = document.getElementById("session-expired-overlay");
+
+	if (!overlay) {
+		overlay = document.createElement("div");
+		overlay.id = "session-expired-overlay";
+		overlay.className = "session-expired-overlay";
+
+		// Create content container
+		const contentContainer = document.createElement("div");
+		contentContainer.className = "expired-content";
+
+		// Add header
+		const header = document.createElement("h2");
+		header.textContent = "Session Expired";
+		contentContainer.appendChild(header);
+
+		// Add message
+		const message = document.createElement("p");
+		message.textContent =
+			"Your session has expired. You can extend your session or logout.";
+		contentContainer.appendChild(message);
+
+		// Add extension options similar to dashboard
+		const extensionContainer = document.createElement("div");
+		extensionContainer.className = "session-extension";
+
+		// Add extension title
+		const extensionTitle = document.createElement("h3");
+		extensionTitle.textContent = "Extend Your Session";
+		extensionContainer.appendChild(extensionTitle);
+
+		// Add extension description
+		const extensionDesc = document.createElement("p");
+		extensionDesc.textContent = "Add more time to continue your session:";
+		extensionContainer.appendChild(extensionDesc);
+
+		// Create duration options
+		const durationOptions = document.createElement("div");
+		durationOptions.className = "duration-options";
+
+		// Define duration options
+		const options = [
+			{ minutes: 15, credits: 8, title: "15 Minutes" },
+			{ minutes: 30, credits: 15, title: "30 Minutes" },
+			{ minutes: 60, credits: 25, title: "1 Hour" },
+		];
+
+		// Create each option element
+		options.forEach((option) => {
+			const optionElement = document.createElement("div");
+			optionElement.className = "duration-option";
+			optionElement.setAttribute("data-minutes", option.minutes);
+			optionElement.setAttribute("data-credits", option.credits);
+
+			const titleDiv = document.createElement("div");
+			titleDiv.className = "duration-title";
+			titleDiv.textContent = option.title;
+
+			const priceDiv = document.createElement("div");
+			priceDiv.className = "duration-price";
+			priceDiv.textContent = `${option.credits} Credits`;
+
+			optionElement.appendChild(titleDiv);
+			optionElement.appendChild(priceDiv);
+			durationOptions.appendChild(optionElement);
+
+			// Add click event
+			optionElement.addEventListener("click", () => {
+				// Remove selected class from all options
+				document
+					.querySelectorAll(".session-expired-overlay .duration-option")
+					.forEach((opt) => opt.classList.remove("selected"));
+
+				// Add selected class to clicked option
+				optionElement.classList.add("selected");
+
+				// Store selected values in custom input fields
+				const customMinutesInput = document.getElementById(
+					"custom-minutes-input"
+				);
+				if (customMinutesInput) {
+					customMinutesInput.value = option.minutes;
+				}
+
+				// Update extend button state
+				updateExpiredExtendButton();
+			});
+		});
+
+		extensionContainer.appendChild(durationOptions);
+
+		// Add custom minutes input
+		const customInputContainer = document.createElement("div");
+		customInputContainer.className = "custom-input-container";
+
+		const customLabel = document.createElement("label");
+		customLabel.textContent = "Custom Minutes:";
+		customLabel.htmlFor = "custom-minutes-input";
+
+		const customMinutesInput = document.createElement("input");
+		customMinutesInput.type = "number";
+		customMinutesInput.id = "custom-minutes-input";
+		customMinutesInput.min = "5";
+		customMinutesInput.max = "240";
+		customMinutesInput.placeholder = "Enter minutes";
+
+		// Add input event to calculate credits and update button state
+		customMinutesInput.addEventListener("input", () => {
+			// Calculate credits based on minutes (using the same rate as 1 hour option)
+			const minutes = parseInt(customMinutesInput.value) || 0;
+
+			// Remove selected class from all options
+			document
+				.querySelectorAll(".session-expired-overlay .duration-option")
+				.forEach((opt) => opt.classList.remove("selected"));
+
+			// Update extend button state
+			updateExpiredExtendButton();
+		});
+
+		customInputContainer.appendChild(customLabel);
+		customInputContainer.appendChild(customMinutesInput);
+		extensionContainer.appendChild(customInputContainer);
+
+		// Add extend button
+		const extendButton = document.createElement("button");
+		extendButton.id = "expired-extend-btn";
+		extendButton.className = "primary-button";
+		extendButton.textContent = "Extend Session";
+		extendButton.disabled = true;
+
+		// Add extend button event
+		extendButton.addEventListener("click", () => {
+			// Get minutes from custom input or selected option
+			const customMinutesInput = document.getElementById(
+				"custom-minutes-input"
+			);
+			let minutes = parseInt(customMinutesInput.value) || 0;
+
+			// If no custom minutes, get from selected option
+			if (minutes === 0) {
+				const selectedOption = document.querySelector(
+					".session-expired-overlay .duration-option.selected"
+				);
+				if (selectedOption) {
+					minutes = parseInt(selectedOption.getAttribute("data-minutes")) || 0;
+				}
+			}
+
+			// Calculate credits (similar rate as 1 hour = 25 credits)
+			const credits = Math.ceil((minutes / 60) * 25);
+
+			if (
+				minutes > 0 &&
+				userData &&
+				userData.credits >= credits &&
+				activeSession
+			) {
+				// Disable button during processing
+				extendButton.disabled = true;
+
+				// Show loading message
+				const extensionMessage = document.getElementById(
+					"expired-extension-message"
+				);
+				if (extensionMessage) {
+					showSuccess(extensionMessage.id, "Extending your session...");
+				}
+
+				// Send extend session request
+				if (window.api) {
+					window.api.send("extendSession", {
+						sessionId: activeSession.id,
+						userId: userData.id,
+						duration: minutes,
+						credits: credits,
+					});
+				}
+			}
+		});
+
+		extensionContainer.appendChild(extendButton);
+
+		// Add message container for errors/success
+		const extensionMessage = document.createElement("div");
+		extensionMessage.id = "expired-extension-message";
+		extensionMessage.className = "error-message hidden";
+		extensionContainer.appendChild(extensionMessage);
+
+		contentContainer.appendChild(extensionContainer);
+
+		// Add restart computer button
+		const restartButton = document.createElement("button");
+		restartButton.textContent = "Logout & Restart Computer";
+		restartButton.className = "warning-button";
+		restartButton.addEventListener("click", () => {
+			// Confirm restart
+			const confirmRestart = confirm(
+				"Are you sure you want to logout and restart the computer? All unsaved work will be lost."
+			);
+
+			if (confirmRestart && window.api) {
+				// Send restart command to main process
+				window.api.send("restartComputer");
+			}
+		});
+		contentContainer.appendChild(restartButton);
+
+		// Add content to overlay
+		overlay.appendChild(contentContainer);
+
+		// Add to body
+		document.body.appendChild(overlay);
+	} else {
+		// Show existing overlay
+		overlay.classList.remove("hidden");
+	}
+
+	// Helper function to update extend button state
+	const updateExpiredExtendButton = () => {
+		const extendButton = document.getElementById("expired-extend-btn");
+		const customMinutesInput = document.getElementById("custom-minutes-input");
+		const extensionMessage = document.getElementById(
+			"expired-extension-message"
+		);
+
+		if (!extendButton || !userData) return;
+
+		// Get minutes from custom input or selected option
+		let minutes = parseInt(customMinutesInput?.value) || 0;
+
+		// If no custom minutes, get from selected option
+		if (minutes === 0) {
+			const selectedOption = document.querySelector(
+				".session-expired-overlay .duration-option.selected"
+			);
+			if (selectedOption) {
+				minutes = parseInt(selectedOption.getAttribute("data-minutes")) || 0;
+			}
+		}
+
+		// Calculate credits (similar rate as 1 hour = 25 credits)
+		const credits = Math.ceil((minutes / 60) * 25);
+
+		// Update button state
+		if (minutes > 0 && userData.credits >= credits) {
+			extendButton.disabled = false;
+			extendButton.textContent = `Extend Session (${credits} Credits)`;
+
+			if (extensionMessage) {
+				hideMessage(extensionMessage.id);
+			}
+		} else if (minutes > 0 && userData.credits < credits) {
+			extendButton.disabled = true;
+			extendButton.textContent = "Extend Session";
+
+			if (extensionMessage) {
+				showError(
+					extensionMessage.id,
+					"You don't have enough credits for this extension"
+				);
+			}
+		} else {
+			extendButton.disabled = true;
+			extendButton.textContent = "Extend Session";
+
+			if (extensionMessage) {
+				hideMessage(extensionMessage.id);
+			}
+		}
+	};
 };
 
 // Update user info display
@@ -942,9 +1234,19 @@ const setupMessageListeners = () => {
 
 		const extensionMessage = document.getElementById("extension-message");
 		const extendSessionBtn = document.getElementById("extend-session-btn");
+		const expiredExtendBtn = document.getElementById("expired-extend-btn");
+		const expiredExtensionMessage = document.getElementById(
+			"expired-extension-message"
+		);
 
+		// Handle normal session extension button
 		if (extendSessionBtn) {
 			extendSessionBtn.disabled = false;
+		}
+
+		// Handle expired session extension button
+		if (expiredExtendBtn) {
+			expiredExtendBtn.disabled = false;
 		}
 
 		if (response.success) {
@@ -959,21 +1261,46 @@ const setupMessageListeners = () => {
 			// Update session view
 			updateSessionView();
 
-			// Show success message
+			// Show success message in regular session view
 			if (extensionMessage) {
 				showSuccess("extension-message", "Session extended successfully");
 				setTimeout(() => hideMessage("extension-message"), 3000);
 			}
 
+			// Show success message in expired overlay
+			if (expiredExtensionMessage) {
+				showSuccess(
+					expiredExtensionMessage.id,
+					"Session extended successfully"
+				);
+
+				// Remove the session expired overlay after a short delay
+				setTimeout(() => {
+					const overlay = document.getElementById("session-expired-overlay");
+					if (overlay) {
+						overlay.remove();
+					}
+				}, 2000);
+			}
+
 			// Remove selection from extension options
 			const extensionOptions = document.querySelectorAll(
-				"#session-view .duration-option"
+				"#session-view .duration-option, .session-expired-overlay .duration-option"
 			);
 			extensionOptions.forEach((opt) => opt.classList.remove("selected"));
 		} else {
+			// Show error in regular session view
 			if (extensionMessage) {
 				showError(
 					"extension-message",
+					response.message || "Failed to extend session"
+				);
+			}
+
+			// Show error in expired overlay
+			if (expiredExtensionMessage) {
+				showError(
+					expiredExtensionMessage.id,
 					response.message || "Failed to extend session"
 				);
 			}
@@ -993,25 +1320,97 @@ const setupMessageListeners = () => {
 				userData = response.userData;
 			}
 
-			// Update UI to show dashboard view
-			updateUI();
+			// Show a message about the computer restarting
+			alert("Session ended. The computer will restart shortly.");
+
+			// Don't update UI since we're restarting anyway
+			// updateUI();
 		} else {
 			alert("Failed to end session: " + (response.message || "Unknown error"));
 		}
 	});
 
-	// Listen for session expiration
-	window.api.receive("sessionExpired", () => {
-		console.log("Session expired");
+	// Listen for session expired UI update
+	window.api.receive("sessionExpiredUI", () => {
+		console.log("Session expired UI update received");
 
-		// Clear active session
-		activeSession = null;
+		// Disable minimize button if it exists
+		const minimizeButton = document.getElementById("minimize-button");
+		if (minimizeButton) {
+			minimizeButton.classList.add("hidden");
+			minimizeButton.disabled = true;
+		}
 
-		// Show expiration message
-		alert("Your session has expired!");
+		// Show session expired overlay
+		showSessionExpiredOverlay();
+	});
 
-		// Update UI to show dashboard view
-		updateUI();
+	// Listen for session response
+	window.api.receive("sessionResponse", (response) => {
+		console.log("Session response received:", response);
+
+		if (response.success) {
+			// Update active session data
+			activeSession = response.sessionData;
+
+			// Update UI based on whether there's an active session
+			updateUI();
+		} else {
+			console.error("Error fetching session:", response.message);
+		}
+	});
+
+	// Listen for registration response
+	window.api.receive("registerResponse", (response) => {
+		console.log("Registration response received:", response);
+
+		// Enable the signup button
+		const signupButton = document.getElementById("signup-button");
+		if (signupButton) {
+			signupButton.disabled = false;
+			signupButton.textContent = "Create Account";
+		}
+
+		if (response.success) {
+			// Show success message
+			showSuccess(
+				"signup-message",
+				response.needsEmailVerification
+					? "Registration successful! Please check your email to verify your account."
+					: "Registration successful! You can now login with your credentials."
+			);
+
+			// Clear the form
+			const emailInput = document.getElementById("signup-email");
+			const usernameInput = document.getElementById("signup-username");
+			const passwordInput = document.getElementById("signup-password");
+			const confirmPasswordInput = document.getElementById(
+				"signup-confirm-password"
+			);
+
+			if (emailInput) emailInput.value = "";
+			if (usernameInput) usernameInput.value = "";
+			if (passwordInput) passwordInput.value = "";
+			if (confirmPasswordInput) confirmPasswordInput.value = "";
+
+			// Switch to login view after a delay
+			setTimeout(() => {
+				const loginView = document.getElementById("login-view");
+				const signupView = document.getElementById("signup-view");
+
+				if (loginView && signupView) {
+					signupView.classList.add("hidden");
+					loginView.classList.remove("hidden");
+					hideMessage("signup-message");
+				}
+			}, 3000);
+		} else {
+			// Show error message
+			showError(
+				"signup-message",
+				response.message || "Registration failed. Please try again."
+			);
+		}
 	});
 
 	// Listen for credit update
