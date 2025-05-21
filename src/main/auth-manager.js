@@ -96,7 +96,7 @@ class AuthManager {
 			try {
 				listener(event);
 			} catch (error) {
-				console.error("Error in auth listener:", error);
+				// Error in listener
 			}
 		});
 	}
@@ -134,9 +134,8 @@ class AuthManager {
 
 			// Write to file
 			fs.writeFileSync(this.sessionPath, JSON.stringify(dataToSave), "utf8");
-			console.log("Session persisted to disk");
 		} catch (error) {
-			console.error("Error persisting session:", error);
+			// Error persisting session
 		}
 	}
 
@@ -147,7 +146,6 @@ class AuthManager {
 		try {
 			// Check if session file exists
 			if (!fs.existsSync(this.sessionPath)) {
-				console.log("No persisted session found");
 				return;
 			}
 
@@ -157,7 +155,6 @@ class AuthManager {
 			// Check if session is too old (24 hours)
 			const MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 			if (Date.now() - sessionData.timestamp > MAX_AGE) {
-				console.log("Persisted session expired, removing");
 				fs.unlinkSync(this.sessionPath);
 				return;
 			}
@@ -172,7 +169,6 @@ class AuthManager {
 					});
 
 					if (error) {
-						console.error("Error restoring auth session:", error.message);
 						fs.unlinkSync(this.sessionPath);
 						return;
 					}
@@ -185,10 +181,6 @@ class AuthManager {
 						.single();
 
 					if (profileError) {
-						console.error(
-							"Error verifying user profile:",
-							profileError.message
-						);
 						fs.unlinkSync(this.sessionPath);
 						return;
 					}
@@ -201,36 +193,34 @@ class AuthManager {
 
 					// Set active session if it exists
 					if (sessionData.activeSession) {
-						// Verify session is still active
-						const { data: sessionInfo, error: sessionError } = await supabase
+						// Check if session is still active
+						const { data: sessionCheck, error: sessionError } = await supabase
 							.from("sessions")
 							.select("*")
 							.eq("id", sessionData.activeSession.id)
+							.eq("is_active", true)
 							.single();
 
-						if (!sessionError && sessionInfo) {
-							this.activeSession = sessionInfo;
+						if (!sessionError && sessionCheck) {
+							this.activeSession = sessionCheck;
 						}
 					}
 
 					// Set up realtime subscriptions
 					this.setupRealtimeSubscriptions();
 
-					// Notify listeners
+					// Notify listeners that session was restored
 					this.notifyListeners({
 						type: "SESSION_RESTORED",
 						data: this.userData,
 					});
-					console.log("Session restored successfully");
 				} catch (error) {
-					console.error("Error during session restoration:", error);
+					// Error restoring session
 					fs.unlinkSync(this.sessionPath);
 				}
 			}
 		} catch (error) {
-			console.error("Error loading persisted session:", error);
-
-			// Remove corrupted session file
+			// Error loading persisted session
 			if (fs.existsSync(this.sessionPath)) {
 				fs.unlinkSync(this.sessionPath);
 			}
@@ -241,77 +231,55 @@ class AuthManager {
 	 * Set up realtime subscriptions for the current user
 	 */
 	setupRealtimeSubscriptions() {
-		// Clear existing subscriptions
+		// Clear any existing subscriptions
 		this.clearRealtimeSubscriptions();
 
-		if (!this.userData || !this.realtimeManager) return;
+		// Make sure we have a user and realtime manager
+		if (!this.userData || !this.realtimeManager) {
+			return;
+		}
 
-		console.log(
-			"Setting up realtime subscriptions for user:",
-			this.userData.id
-		);
-
-		// Subscribe to profile changes
-		const profileSub = this.realtimeManager.subscribe(
+		// Subscribe to profile updates
+		const profileSubscription = this.realtimeManager.subscribe(
 			"profiles",
 			"UPDATE",
 			(payload) => {
-				// Only process updates for the current user
-				if (payload.new && payload.new.id === this.userData.id) {
-					console.log("Profile updated:", payload.new);
-
-					// Update the current user data
-					this.userData = { ...this.userData, ...payload.new };
+				// Check if this update is for the current user
+				if (
+					payload.new &&
+					payload.new.id === this.userData.id &&
+					this.userData
+				) {
+					// Update the user data
+					this.userData = {
+						...this.userData,
+						...payload.new,
+					};
 
 					// Notify listeners
-					this.notifyListeners({ type: "USER_UPDATED", data: this.userData });
+					this.notifyListeners({
+						type: "USER_UPDATED",
+						data: this.userData,
+					});
 				}
 			},
 			{
-				filter: { filter: `id=eq.${this.userData.id}` },
+				filter: { column: "id", value: this.userData.id },
 			}
 		);
 
-		this.realtimeSubscriptions.push(profileSub);
-
-		// Subscribe to active session updates if session exists
-		if (this.activeSession) {
-			const sessionSub = this.realtimeManager.subscribe(
-				"sessions",
-				"UPDATE",
-				(payload) => {
-					// Only process updates for the current session
-					if (payload.new && payload.new.id === this.activeSession.id) {
-						console.log("Session updated:", payload.new);
-
-						// Update the active session data
-						this.activeSession = { ...this.activeSession, ...payload.new };
-
-						// Notify listeners
-						this.notifyListeners({
-							type: "SESSION_UPDATED",
-							data: this.activeSession,
-						});
-					}
-				},
-				{
-					filter: { filter: `id=eq.${this.activeSession.id}` },
-				}
-			);
-
-			this.realtimeSubscriptions.push(sessionSub);
-		}
-
 		// Subscribe to credit transactions
-		const creditSub = this.realtimeManager.subscribe(
+		const transactionSubscription = this.realtimeManager.subscribe(
 			"credit_transactions",
 			"INSERT",
 			(payload) => {
-				// Only process transactions for the current user
-				if (payload.new && payload.new.user_id === this.userData.id) {
-					console.log("New credit transaction:", payload.new);
-
-					// Notify listeners
+				// Check if this transaction is for the current user
+				if (
+					payload.new &&
+					payload.new.user_id === this.userData.id &&
+					this.userData
+				) {
+					// Notify listeners about the transaction
 					this.notifyListeners({
 						type: "CREDIT_TRANSACTION",
 						data: payload.new,
@@ -319,99 +287,103 @@ class AuthManager {
 				}
 			},
 			{
-				filter: { filter: `user_id=eq.${this.userData.id}` },
+				filter: { column: "user_id", value: this.userData.id },
 			}
 		);
 
-		this.realtimeSubscriptions.push(creditSub);
+		// Store subscription IDs for cleanup
+		this.realtimeSubscriptions.push(profileSubscription);
+		this.realtimeSubscriptions.push(transactionSubscription);
 	}
 
 	/**
 	 * Clear all realtime subscriptions
 	 */
 	clearRealtimeSubscriptions() {
-		if (this.realtimeSubscriptions && this.realtimeSubscriptions.length > 0) {
-			this.realtimeSubscriptions.forEach((unsubscribe) => {
-				if (typeof unsubscribe === "function") {
-					try {
-						unsubscribe();
-					} catch (error) {
-						console.error("Error unsubscribing from realtime channel:", error);
-					}
-				}
-			});
+		if (!this.realtimeManager) return;
 
-			this.realtimeSubscriptions = [];
+		// Unsubscribe from all subscriptions
+		this.realtimeSubscriptions.forEach((subscriptionId) => {
+			this.realtimeManager.unsubscribe(subscriptionId);
+		});
+
+		// Clear the subscriptions array
+		this.realtimeSubscriptions = [];
+	}
+
+	/**
+	 * Clear the current user data
+	 */
+	clearCurrentUser() {
+		// Clear realtime subscriptions
+		this.clearRealtimeSubscriptions();
+
+		// Clear user data and active session
+		this.userData = null;
+		this.activeSession = null;
+
+		// Remove persisted session
+		if (fs.existsSync(this.sessionPath)) {
+			fs.unlinkSync(this.sessionPath);
 		}
 	}
 
 	/**
 	 * Handle authentication errors
-	 * @param {Object} error - The error object
-	 * @returns {String} User-friendly error message
+	 * @param {Object} error - The authentication error
+	 * @returns {string} A user-friendly error message
 	 */
 	handleAuthError(error) {
-		console.error("Authentication error:", error);
+		if (!error) return "An unknown error occurred";
 
-		// Default error message
-		let userMessage = "An unexpected error occurred during authentication";
+		// Map common error messages to user-friendly messages
+		const errorMap = {
+			"Invalid login credentials": "Invalid email or password",
+			"Email not confirmed": "Please verify your email address",
+			"Email already in use": "This email is already registered",
+			"Password is too weak":
+				"Password is too weak. Use at least 8 characters with numbers and special characters.",
+			"Rate limit exceeded": "Too many attempts. Please try again later.",
+		};
 
-		if (error) {
-			// Common Supabase auth errors
-			if (error.message) {
-				if (error.message.includes("Invalid login credentials")) {
-					userMessage = "Invalid email or password";
-				} else if (error.message.includes("User already registered")) {
-					userMessage = "An account with this email already exists";
-				} else if (error.message.includes("Email not confirmed")) {
-					userMessage = "Please verify your email address before logging in";
-				} else if (
-					error.message.includes("rate limit") ||
-					error.message.includes("too many requests")
-				) {
-					userMessage = "Too many login attempts. Please try again later";
-				} else if (
-					error.message.includes("network") ||
-					error.message.includes("connection")
-				) {
-					userMessage = "Network error. Please check your internet connection";
-				} else {
-					// Use the message from the error if it's not one of the recognized ones
-					userMessage = error.message;
-				}
+		// Check if we have a mapped message
+		for (const [key, message] of Object.entries(errorMap)) {
+			if (error.message && error.message.includes(key)) {
+				return message;
 			}
 		}
 
-		return userMessage;
+		// Return the original error message if no mapping found
+		return error.message || "An unexpected error occurred";
 	}
 
 	/**
-	 * Handle user logout
+	 * Logout the current user
+	 * @returns {Promise<{success: boolean, message: string}>}
 	 */
 	async logout() {
 		try {
 			// Sign out from Supabase
-			await supabase.auth.signOut();
+			const { error } = await supabase.auth.signOut();
 
-			// Clear realtime subscriptions
-			this.clearRealtimeSubscriptions();
-
-			// Clear user data and active session
-			this.userData = null;
-			this.activeSession = null;
-
-			// Remove persisted session
-			if (fs.existsSync(this.sessionPath)) {
-				fs.unlinkSync(this.sessionPath);
-			}
+			// Clear local user data regardless of Supabase response
+			this.clearCurrentUser();
 
 			// Notify listeners
 			this.notifyListeners({ type: "LOGGED_OUT" });
 
-			return { success: true };
+			return {
+				success: true,
+				message: "Logged out successfully",
+			};
 		} catch (error) {
-			console.error("Error logging out:", error);
-			return { success: false, message: "Failed to log out properly" };
+			// Still clear local data even if there's an error
+			this.clearCurrentUser();
+
+			return {
+				success: false,
+				message: "Error during logout, but local data was cleared",
+			};
 		}
 	}
 }

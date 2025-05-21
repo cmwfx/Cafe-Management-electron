@@ -7,11 +7,15 @@
 let userData = null;
 let activeSession = null;
 
-// Check if the API is available from preload script
-console.log(
-	"Checking for API availability:",
-	window.api ? "API Available" : "API Missing"
-);
+// Define the handler for when window loses focus during expired session
+function handleSessionExpiredWindowBlur() {
+	// After a very brief delay, re-focus and send session expired
+	setTimeout(() => {
+		if (window.api) {
+			window.api.send("sessionExpired");
+		}
+	}, 100);
+}
 
 // Email validation function
 const isValidEmail = (email) => {
@@ -52,8 +56,6 @@ const hideMessage = (elementId) => {
 
 // Update the UI based on the current state
 const updateUI = () => {
-	console.log("Updating UI, userData:", userData);
-
 	const loginView = document.getElementById("login-view");
 	const signupView = document.getElementById("signup-view");
 	const dashboardView = document.getElementById("dashboard-view");
@@ -90,8 +92,6 @@ const updateUI = () => {
 
 // Update session view with current session data
 const updateSessionView = () => {
-	console.log("Updating session view with session data:", activeSession);
-
 	if (!activeSession) return;
 
 	// Update user info in session view
@@ -122,8 +122,6 @@ const updateSessionView = () => {
 
 // Update dashboard view with current user data
 const updateDashboardView = () => {
-	console.log("Updating dashboard view with user data:", userData);
-
 	// Update credit display if available
 	const creditDisplay = document.getElementById("credit-display");
 	if (creditDisplay && userData) {
@@ -151,72 +149,17 @@ const fetchTransactionHistory = async () => {
 		// Request transaction history from main process
 		window.api.send("getTransactionHistory", { userId: userData.id });
 	} catch (error) {
-		console.error("Error requesting transaction history:", error);
+		// Error handling
 	}
-};
-
-// Update transaction history display
-const updateTransactionHistory = (transactions) => {
-	const transactionList = document.getElementById("transaction-list");
-	if (!transactionList) return;
-
-	// Clear existing content
-	transactionList.innerHTML = "";
-
-	if (!transactions || transactions.length === 0) {
-		// Show empty state
-		const emptyDiv = document.createElement("div");
-		emptyDiv.className = "transaction-empty";
-		emptyDiv.textContent = "No recent transactions";
-		transactionList.appendChild(emptyDiv);
-		return;
-	}
-
-	// Add transactions to the list
-	transactions.forEach((transaction) => {
-		const transactionItem = document.createElement("div");
-		transactionItem.className = "transaction-item";
-
-		const transactionInfo = document.createElement("div");
-		transactionInfo.className = "transaction-info";
-
-		const transactionType = document.createElement("div");
-		transactionType.className = "transaction-type";
-		transactionType.textContent =
-			transaction.description ||
-			(transaction.amount > 0 ? "Credit added" : "Session payment");
-
-		const transactionDate = document.createElement("div");
-		transactionDate.className = "transaction-date";
-		transactionDate.textContent = new Date(
-			transaction.created_at
-		).toLocaleString();
-
-		transactionInfo.appendChild(transactionType);
-		transactionInfo.appendChild(transactionDate);
-
-		const transactionAmount = document.createElement("div");
-		transactionAmount.className = `transaction-amount ${
-			transaction.amount > 0 ? "positive" : "negative"
-		}`;
-		transactionAmount.textContent = `${transaction.amount > 0 ? "+" : ""}${
-			transaction.amount
-		} credits`;
-
-		transactionItem.appendChild(transactionInfo);
-		transactionItem.appendChild(transactionAmount);
-
-		transactionList.appendChild(transactionItem);
-	});
 };
 
 // Calculate credit cost based on duration
 const calculateCreditCost = (minutes) => {
-	// Basic formula: 0.5 credits per minute with minimum of 15 minutes
+	// Updated formula: 1 credit per minute
 	// Could be replaced with pricing from the server in a future update
 	const minMinutes = 15;
 	const validMinutes = Math.max(minMinutes, minutes);
-	return Math.ceil(validMinutes * 0.5);
+	return validMinutes; // 1:1 ratio - 1 credit per minute
 };
 
 // Update session pricing information
@@ -228,28 +171,25 @@ const updateSessionPricing = () => {
 	if (customDuration && customPrice) {
 		const updateCustomPrice = () => {
 			const minutes = parseInt(customDuration.value) || 15;
-			const credits = calculateCreditCost(minutes);
-			customPrice.textContent = `${credits} credits`;
+			// Directly use minutes value (1:1 ratio)
+			customPrice.textContent = `${minutes} credits`;
 		};
 
 		// Set initial value
 		updateCustomPrice();
 
 		// Update when value changes
+		customDuration.removeEventListener("input", updateCustomPrice); // Remove any existing listeners
 		customDuration.addEventListener("input", updateCustomPrice);
 	}
 };
 
 // Setup dashboard controls
 const setupDashboardControls = () => {
-	console.log("Setting up dashboard controls");
-
 	// Set up logout button
 	const logoutButton = document.getElementById("logout-button");
 	if (logoutButton) {
 		logoutButton.addEventListener("click", () => {
-			console.log("Logout button clicked");
-
 			// Clear user data
 			userData = null;
 			activeSession = null;
@@ -329,10 +269,10 @@ const setupDashboardControls = () => {
 			// Remove selected class from preset options
 			durationOptions.forEach((opt) => opt.classList.remove("selected"));
 
-			// Calculate duration and credits
+			// Calculate duration and credits - directly use minutes value
 			const minutes = parseInt(customDuration.value) || 15;
 			selectedDuration = minutes;
-			selectedCredits = calculateCreditCost(minutes);
+			selectedCredits = minutes; // 1:1 ratio - 1 credit per minute
 
 			// Update custom price display
 			const customPrice = document.getElementById("custom-price");
@@ -360,10 +300,6 @@ const setupDashboardControls = () => {
 				);
 				return;
 			}
-
-			console.log(
-				`Starting session for ${selectedDuration} minutes, using ${selectedCredits} credits`
-			);
 
 			// Send start session request to main process
 			if (window.api) {
@@ -460,10 +396,6 @@ const setupSessionExtension = () => {
 				return;
 			}
 
-			console.log(
-				`Extending session for ${extensionDuration} minutes, using ${extensionCredits} credits`
-			);
-
 			// Send extend session request to main process
 			if (window.api) {
 				window.api.send("extendSession", {
@@ -486,7 +418,6 @@ const setupSessionExtension = () => {
 
 	if (minimizeBtn) {
 		minimizeBtn.addEventListener("click", () => {
-			console.log("Minimize button clicked");
 			if (window.api) {
 				window.api.send("minimizeApp");
 			}
@@ -495,8 +426,6 @@ const setupSessionExtension = () => {
 
 	if (endSessionBtn) {
 		endSessionBtn.addEventListener("click", () => {
-			console.log("End session button clicked");
-
 			// Ask for confirmation
 			const confirmEnd = confirm(
 				"Are you sure you want to end your session and restart the computer? All unsaved work will be lost."
@@ -542,6 +471,7 @@ const startSessionCountdown = () => {
 
 			// Handle session expiration
 			if (window.api) {
+				// First session expired notification
 				window.api.send("sessionExpired");
 
 				// Disable minimize button if it exists
@@ -553,6 +483,17 @@ const startSessionCountdown = () => {
 
 				// Show session expired overlay
 				showSessionExpiredOverlay();
+
+				// Set up a recurring check to ensure the app stays in foreground
+				// This is crucial to prevent users from bypassing the expired session screen
+				const intervalId = setInterval(() => {
+					// Re-send session expired notification every 2 seconds
+					// This will bring the window back to foreground if user managed to switch to another app
+					window.api.send("sessionExpired");
+				}, 2000);
+
+				// Store the interval ID in a global variable so we can clear it if the session is extended
+				window.sessionExpiredForegroundInterval = intervalId;
 			}
 			return;
 		}
@@ -625,9 +566,9 @@ const showSessionExpiredOverlay = () => {
 
 		// Define duration options
 		const options = [
-			{ minutes: 15, credits: 8, title: "15 Minutes" },
-			{ minutes: 30, credits: 15, title: "30 Minutes" },
-			{ minutes: 60, credits: 25, title: "1 Hour" },
+			{ minutes: 15, credits: 15, title: "15 Minutes" },
+			{ minutes: 30, credits: 30, title: "30 Minutes" },
+			{ minutes: 60, credits: 60, title: "1 Hour" },
 		];
 
 		// Create each option element
@@ -691,7 +632,7 @@ const showSessionExpiredOverlay = () => {
 
 		// Add input event to calculate credits and update button state
 		customMinutesInput.addEventListener("input", () => {
-			// Calculate credits based on minutes (using the same rate as 1 hour option)
+			// Calculate credits based on minutes using 1:1 ratio (1 credit = 1 minute)
 			const minutes = parseInt(customMinutesInput.value) || 0;
 
 			// Remove selected class from all options
@@ -732,8 +673,8 @@ const showSessionExpiredOverlay = () => {
 				}
 			}
 
-			// Calculate credits (similar rate as 1 hour = 25 credits)
-			const credits = Math.ceil((minutes / 60) * 25);
+			// Calculate credits using 1:1 ratio (1 credit = 1 minute)
+			const credits = minutes;
 
 			if (
 				minutes > 0 &&
@@ -824,8 +765,8 @@ const showSessionExpiredOverlay = () => {
 			}
 		}
 
-		// Calculate credits (similar rate as 1 hour = 25 credits)
-		const credits = Math.ceil((minutes / 60) * 25);
+		// Calculate credits using 1:1 ratio (1 credit = 1 minute)
+		const credits = minutes;
 
 		// Update button state
 		if (minutes > 0 && userData.credits >= credits) {
@@ -872,21 +813,16 @@ const setupViewSwitching = () => {
 	const signupView = document.getElementById("signup-view");
 
 	if (!switchToSignup || !switchToLogin || !loginView || !signupView) {
-		console.error("Could not find view switching elements");
 		return;
 	}
 
-	console.log("Setting up view switching");
-
 	switchToSignup.addEventListener("click", () => {
-		console.log("Switching to signup view");
 		loginView.classList.add("hidden");
 		signupView.classList.remove("hidden");
 		hideMessage("login-message");
 	});
 
 	switchToLogin.addEventListener("click", () => {
-		console.log("Switching to login view");
 		signupView.classList.add("hidden");
 		loginView.classList.remove("hidden");
 		hideMessage("signup-message");
@@ -900,17 +836,12 @@ const setupLoginForm = () => {
 	const passwordInput = document.getElementById("login-password");
 
 	if (!loginButton || !emailInput || !passwordInput) {
-		console.error("Could not find login form elements");
 		return;
 	}
-
-	console.log("Setting up login form");
 
 	loginButton.addEventListener("click", () => {
 		const email = emailInput.value.trim();
 		const password = passwordInput.value.trim();
-
-		console.log("Login button clicked:", email);
 
 		// Validate inputs
 		if (!email || !password) {
@@ -928,7 +859,6 @@ const setupLoginForm = () => {
 
 		// Check if API is available
 		if (!window.api) {
-			console.error("Error: API is not available, cannot send login request");
 			showError(
 				"login-message",
 				"Internal error: Communication with the application is not available. Please restart the application."
@@ -946,9 +876,7 @@ const setupLoginForm = () => {
 		try {
 			// Send login request to main process
 			window.api.send("login", { username: email, password });
-			console.log("Login request sent successfully");
 		} catch (error) {
-			console.error("Error sending login request:", error);
 			showError(
 				"login-message",
 				"Failed to send login request. Please try again."
@@ -983,11 +911,8 @@ const setupSignupForm = () => {
 		!passwordInput ||
 		!confirmPasswordInput
 	) {
-		console.error("Could not find signup form elements");
 		return;
 	}
-
-	console.log("Setting up signup form");
 
 	// Function to perform validation checks
 	const validateSignupForm = () => {
@@ -1058,8 +983,6 @@ const setupSignupForm = () => {
 		const username = usernameInput.value.trim();
 		const password = passwordInput.value.trim();
 
-		console.log("Signup button clicked - email:", email, "username:", username);
-
 		// Clear any previous messages
 		hideMessage("signup-message");
 
@@ -1070,9 +993,6 @@ const setupSignupForm = () => {
 
 		// Check if API is available
 		if (!window.api) {
-			console.error(
-				"Error: API is not available, cannot send registration request"
-			);
 			showError(
 				"signup-message",
 				"Internal error: Communication with the application is not available. Please restart the application."
@@ -1087,8 +1007,6 @@ const setupSignupForm = () => {
 		// Show processing message
 		showSuccess("signup-message", "Processing registration...");
 
-		console.log("Sending registration request to main process");
-
 		try {
 			// Send signup request to main process
 			window.api.send("register", {
@@ -1096,9 +1014,7 @@ const setupSignupForm = () => {
 				display_name: username,
 				password,
 			});
-			console.log("Registration request sent successfully");
 		} catch (error) {
-			console.error("Error sending registration request:", error);
 			showError(
 				"signup-message",
 				"Failed to send registration request. Please try again."
@@ -1119,14 +1035,11 @@ const setupSignupForm = () => {
 // Set up message listeners from the main process
 const setupMessageListeners = () => {
 	if (!window.api) {
-		console.error("API is not available, cannot set up message listeners");
 		return;
 	}
 
 	// Listen for login response
 	window.api.receive("loginResponse", (response) => {
-		console.log("Received login response:", response.success);
-
 		// Enable the login button
 		const loginButton = document.getElementById("login-button");
 		if (loginButton) {
@@ -1142,7 +1055,7 @@ const setupMessageListeners = () => {
 			try {
 				localStorage.setItem("userData", JSON.stringify(userData));
 			} catch (error) {
-				console.error("Error saving user data to localStorage:", error);
+				// Error handling
 			}
 
 			// Hide the login form
@@ -1161,13 +1074,11 @@ const setupMessageListeners = () => {
 
 	// Listen for logout response
 	window.api.receive("logoutResponse", (response) => {
-		console.log("Received logout response:", response);
-
 		// Clear localStorage
 		try {
 			localStorage.removeItem("userData");
 		} catch (error) {
-			console.error("Error clearing user data from localStorage:", error);
+			// Error handling
 		}
 
 		// Reset logout button if exists
@@ -1187,19 +1098,15 @@ const setupMessageListeners = () => {
 
 	// Listen for transaction history response
 	window.api.receive("transactionHistoryResponse", (response) => {
-		console.log("Transaction history response received:", response);
-
 		if (response.success) {
 			updateTransactionHistory(response.transactions);
 		} else {
-			console.error("Error fetching transaction history:", response.message);
+			// Error handling
 		}
 	});
 
 	// Listen for session start response
 	window.api.receive("sessionStartResponse", (response) => {
-		console.log("Session start response received:", response);
-
 		const sessionMessage = document.getElementById("session-message");
 		const startSessionBtn = document.getElementById("start-session-btn");
 
@@ -1230,8 +1137,6 @@ const setupMessageListeners = () => {
 
 	// Listen for session extension response
 	window.api.receive("sessionExtendResponse", (response) => {
-		console.log("Session extension response received:", response);
-
 		const extensionMessage = document.getElementById("extension-message");
 		const extendSessionBtn = document.getElementById("extend-session-btn");
 		const expiredExtendBtn = document.getElementById("expired-extend-btn");
@@ -1274,11 +1179,28 @@ const setupMessageListeners = () => {
 					"Session extended successfully"
 				);
 
+				// Clear the foreground check interval if it exists
+				if (window.sessionExpiredForegroundInterval) {
+					clearInterval(window.sessionExpiredForegroundInterval);
+					window.sessionExpiredForegroundInterval = null;
+				}
+
+				// Remove blur event listener if it was added
+				window.removeEventListener("blur", handleSessionExpiredWindowBlur);
+
 				// Remove the session expired overlay after a short delay
 				setTimeout(() => {
 					const overlay = document.getElementById("session-expired-overlay");
 					if (overlay) {
 						overlay.remove();
+					}
+
+					// Remove fullscreen mode class from body
+					document.body.classList.remove("fullscreen-mode");
+
+					// Allow the window to be non-always-on-top again
+					if (window.api) {
+						window.api.send("sessionExtended");
 					}
 				}, 2000);
 			}
@@ -1309,8 +1231,6 @@ const setupMessageListeners = () => {
 
 	// Listen for session end response
 	window.api.receive("sessionEndResponse", (response) => {
-		console.log("Session end response received:", response);
-
 		if (response.success) {
 			// Clear active session
 			activeSession = null;
@@ -1332,8 +1252,6 @@ const setupMessageListeners = () => {
 
 	// Listen for session expired UI update
 	window.api.receive("sessionExpiredUI", () => {
-		console.log("Session expired UI update received");
-
 		// Disable minimize button if it exists
 		const minimizeButton = document.getElementById("minimize-button");
 		if (minimizeButton) {
@@ -1343,12 +1261,32 @@ const setupMessageListeners = () => {
 
 		// Show session expired overlay
 		showSessionExpiredOverlay();
+
+		// Add a class to document body to ensure fullscreen UI is shown correctly
+		document.body.classList.add("fullscreen-mode");
+
+		// If we're in an iframe or embedded context, try to request fullscreen at the DOM level as well
+		try {
+			// Use the appropriate fullscreen API based on browser support
+			if (document.documentElement.requestFullscreen) {
+				document.documentElement.requestFullscreen();
+			} else if (document.documentElement.webkitRequestFullscreen) {
+				document.documentElement.webkitRequestFullscreen();
+			} else if (document.documentElement.msRequestFullscreen) {
+				document.documentElement.msRequestFullscreen();
+			}
+		} catch (error) {
+			// Silently handle any errors with fullscreen request
+			console.error("Fullscreen request failed:", error);
+		}
+
+		// Add focus event listener to re-request focus when window loses focus
+		// This is important to ensure our window stays in the foreground
+		window.addEventListener("blur", handleSessionExpiredWindowBlur);
 	});
 
 	// Listen for session response
 	window.api.receive("sessionResponse", (response) => {
-		console.log("Session response received:", response);
-
 		if (response.success) {
 			// Update active session data
 			activeSession = response.sessionData;
@@ -1356,14 +1294,12 @@ const setupMessageListeners = () => {
 			// Update UI based on whether there's an active session
 			updateUI();
 		} else {
-			console.error("Error fetching session:", response.message);
+			// Error handling
 		}
 	});
 
 	// Listen for registration response
 	window.api.receive("registerResponse", (response) => {
-		console.log("Registration response received:", response);
-
 		// Enable the signup button
 		const signupButton = document.getElementById("signup-button");
 		if (signupButton) {
@@ -1415,8 +1351,6 @@ const setupMessageListeners = () => {
 
 	// Listen for credit update
 	window.api.receive("creditUpdate", (response) => {
-		console.log("Credit update received:", response);
-
 		if (response.userData) {
 			// Update user data with new credit balance
 			userData = response.userData;
@@ -1430,8 +1364,6 @@ const setupMessageListeners = () => {
 // Check for existing session on startup
 const checkExistingSession = () => {
 	if (!userData || !window.api) return;
-
-	console.log("Checking for existing session...");
 
 	// Show loading view
 	const loadingView = document.getElementById("loading-view");
@@ -1450,7 +1382,6 @@ const checkExistingSession = () => {
 	try {
 		window.api.send("getActiveSession", { userId: userData.id });
 	} catch (error) {
-		console.error("Error checking for existing session:", error);
 		// Show dashboard view (default)
 		updateUI();
 	}
@@ -1458,8 +1389,6 @@ const checkExistingSession = () => {
 
 // Initialize the application
 const initApp = () => {
-	console.log("Initializing application...");
-
 	// Set up event listeners
 	setupViewSwitching();
 	setupLoginForm();
@@ -1472,16 +1401,11 @@ const initApp = () => {
 		const storedUserData = localStorage.getItem("userData");
 		if (storedUserData) {
 			userData = JSON.parse(storedUserData);
-			console.log(
-				"Found stored user data:",
-				userData.username || userData.email
-			);
-
 			// Check for existing session
 			checkExistingSession();
 		}
 	} catch (error) {
-		console.error("Error loading stored user data:", error);
+		// Error handling
 	}
 
 	// Update UI based on current state

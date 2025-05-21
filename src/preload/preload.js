@@ -56,16 +56,12 @@ const validReceiveChannels = [
 	"creditUpdate",
 ];
 
-// Log that preload is working
-console.log("Preload script is running");
-
 // Expose protected methods to the renderer process
 contextBridge.exposeInMainWorld("api", {
 	// Send messages to main process
 	send: (channel, data) => {
 		// Validate channel
 		if (!validSendChannels.includes(channel)) {
-			console.error(`Invalid send channel: ${channel}`);
 			return;
 		}
 
@@ -77,7 +73,6 @@ contextBridge.exposeInMainWorld("api", {
 	receive: (channel, callback) => {
 		// Validate channel
 		if (!validReceiveChannels.includes(channel)) {
-			console.error(`Invalid receive channel: ${channel}`);
 			return;
 		}
 

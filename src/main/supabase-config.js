@@ -10,16 +10,6 @@ dotenv.config({ path: envPath });
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 
-// Check if environment variables are loaded
-if (!supabaseUrl || !supabaseAnonKey) {
-	console.error("Supabase environment variables are missing!");
-	// In development, provide more helpful error message
-	if (process.env.NODE_ENV === "development") {
-		console.error("Please ensure your .env file contains:");
-		console.error("VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY variables");
-	}
-}
-
 // Create and export Supabase client
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

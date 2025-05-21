@@ -14,8 +14,6 @@ class SupabaseRealtime {
 	 */
 	initialize() {
 		if (this.isInitialized) return;
-
-		console.log("Initializing Supabase realtime client...");
 		this.isInitialized = true;
 	}
 
@@ -35,11 +33,8 @@ class SupabaseRealtime {
 
 		// Check if subscription already exists
 		if (this.subscriptions.has(key)) {
-			console.log(`Subscription to ${table} for ${event} already exists`);
 			return this.subscriptions.get(key).id;
 		}
-
-		console.log(`Subscribing to ${table} for ${event} events...`);
 
 		// Create channel for the table and event
 		let channel = supabase
@@ -53,13 +48,10 @@ class SupabaseRealtime {
 					...filter,
 				},
 				(payload) => {
-					console.log(`Realtime event on ${table}:`, payload);
 					callback(payload);
 				}
 			)
-			.subscribe((status) => {
-				console.log(`Subscription status for ${table}:`, status);
-			});
+			.subscribe();
 
 		// Store the subscription
 		this.subscriptions.set(key, { channel, id: key });
@@ -73,11 +65,9 @@ class SupabaseRealtime {
 	 */
 	unsubscribe(subscriptionId) {
 		if (!this.subscriptions.has(subscriptionId)) {
-			console.warn(`Subscription ${subscriptionId} not found`);
 			return;
 		}
 
-		console.log(`Unsubscribing from ${subscriptionId}...`);
 		const { channel } = this.subscriptions.get(subscriptionId);
 
 		// Remove the subscription
@@ -89,8 +79,6 @@ class SupabaseRealtime {
 	 * Unsubscribe from all subscriptions
 	 */
 	unsubscribeAll() {
-		console.log("Unsubscribing from all subscriptions...");
-
 		for (const [key, { channel }] of this.subscriptions.entries()) {
 			supabase.removeChannel(channel);
 			this.subscriptions.delete(key);
