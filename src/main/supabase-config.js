@@ -1,14 +1,57 @@
 const { createClient } = require("@supabase/supabase-js");
-const dotenv = require("dotenv");
 const path = require("path");
+const fs = require("fs");
 
-// Load environment variables
-const envPath = path.resolve(process.cwd(), ".env");
-dotenv.config({ path: envPath });
+// First try to load from app-config
+let supabaseUrl = "";
+let supabaseAnonKey = "";
 
-// Define Supabase URL and API key
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+// Try to load configuration from multiple sources with fallbacks
+try {
+	// First, try to use the resource path config file in production
+	const resourcePath = process.resourcesPath
+		? path.join(process.resourcesPath, "config.json")
+		: path.join(__dirname, "..", "..", "config.json");
+
+	if (fs.existsSync(resourcePath)) {
+		console.log("Loading configuration from resources folder:", resourcePath);
+		const config = JSON.parse(fs.readFileSync(resourcePath, "utf8"));
+		supabaseUrl = config.supabaseUrl;
+		supabaseAnonKey = config.supabaseAnonKey;
+		console.log(
+			"Loaded Supabase URL from config.json:",
+			supabaseUrl ? "Found" : "Not found"
+		);
+	} else {
+		console.log("Config file not found at resources path:", resourcePath);
+
+		// As fallback, try env file
+		const dotenv = require("dotenv");
+		const envPath = path.resolve(process.cwd(), ".env");
+		dotenv.config({ path: envPath });
+
+		// Load from environment variables
+		supabaseUrl = process.env.VITE_SUPABASE_URL;
+		supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+		console.log(
+			"Loaded from environment variables:",
+			supabaseUrl ? "Found" : "Not found"
+		);
+	}
+} catch (error) {
+	console.error("Error loading configuration:", error);
+}
+
+// Validate configuration
+if (!supabaseUrl) {
+	throw new Error("supabaseUrl is required. Please check your configuration.");
+}
+
+if (!supabaseAnonKey) {
+	throw new Error(
+		"supabaseAnonKey is required. Please check your configuration."
+	);
+}
 
 // Create and export Supabase client
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
