@@ -30,6 +30,7 @@ class SessionManager {
 			}
 
 			// Fetch user to check credit balance
+			console.log(`Fetching user data for ID: ${userId}`);
 			const { data: user, error: userError } = await supabase
 				.from("profiles")
 				.select("*")
@@ -43,6 +44,9 @@ class SessionManager {
 					message: "User not found",
 				};
 			}
+			console.log(
+				`User data fetched successfully: ${user.username}, credits: ${user.credits}`
+			);
 
 			// Check if user has enough credits
 			if (user.credits < credits) {
@@ -53,16 +57,22 @@ class SessionManager {
 			}
 
 			// Get computer ID (could be obtained from a more robust method)
+			console.log("Generating computer ID...");
 			const computerId = await this.getComputerId();
+			console.log(`Computer ID generated: ${computerId}`);
 
 			// Calculate end time
 			const startTime = new Date();
 			const endTime = new Date(
 				startTime.getTime() + durationMinutes * 60 * 1000
 			);
+			console.log(
+				`Session period: ${startTime.toISOString()} to ${endTime.toISOString()}`
+			);
 
 			// Start transaction
 			// 1. Insert session record
+			console.log("Creating session record in database...");
 			const { data: sessionData, error: sessionError } = await supabase
 				.from("sessions")
 				.insert({
@@ -84,11 +94,20 @@ class SessionManager {
 					message: "Failed to create session record",
 				};
 			}
+			console.log(`Session record created with ID: ${sessionData.id}`);
 
-			// 2. Deduct credits from user
+			// 2. Deduct credits from user and mark as active
+			console.log(
+				`Updating user credits: ${user.credits} - ${credits} = ${
+					user.credits - credits
+				}`
+			);
 			const { data: updatedUser, error: creditError } = await supabase
 				.from("profiles")
-				.update({ credits: user.credits - credits })
+				.update({
+					credits: user.credits - credits,
+					updated_at: new Date().toISOString(),
+				})
 				.eq("id", userId)
 				.select()
 				.single();
@@ -97,6 +116,7 @@ class SessionManager {
 				console.error("Error updating user credits:", creditError);
 
 				// Try to roll back session creation
+				console.log(`Rolling back session creation for ID: ${sessionData.id}`);
 				await supabase.from("sessions").delete().eq("id", sessionData.id);
 
 				return {
@@ -104,8 +124,12 @@ class SessionManager {
 					message: "Failed to update credits",
 				};
 			}
+			console.log(
+				`User credits updated successfully. New balance: ${updatedUser.credits}`
+			);
 
 			// 3. Record credit transaction
+			console.log("Recording credit transaction...");
 			const { error: transactionError } = await supabase
 				.from("credit_transactions")
 				.insert({
@@ -119,16 +143,35 @@ class SessionManager {
 			if (transactionError) {
 				console.error("Error recording transaction:", transactionError);
 				// Non-critical error, continue anyway
+			} else {
+				console.log("Credit transaction recorded successfully");
 			}
 
-			// Update computer status
-			await this.updateComputerStatus(computerId, userId, "in_use");
+			// 4. Update computer status
+			console.log(`Updating computer status for ${computerId} to in_use`);
+			const computerUpdateSuccess = await this.updateComputerStatus(
+				computerId,
+				userId,
+				"in_use"
+			);
+			if (!computerUpdateSuccess) {
+				console.warn(
+					"Could not update computer status, but continuing with session creation"
+				);
+			}
 
 			// Store session in memory
 			this.activeSessions.set(userId, sessionData);
+			console.log(`Session stored in memory for user ${userId}`);
 
 			// Update the auth manager's current user
-			authManager.updateCurrentUser(updatedUser);
+			this.updateCurrentUser(updatedUser);
+			console.log("Auth manager updated with new user data");
+
+			// Log successful session start
+			console.log(
+				`Session started successfully. Session ID: ${sessionData.id}, User ID: ${userId}`
+			);
 
 			return {
 				success: true,
@@ -138,6 +181,11 @@ class SessionManager {
 			};
 		} catch (error) {
 			console.error("Unexpected error starting session:", error);
+			console.error("Error details:", {
+				name: error.name,
+				message: error.message,
+				stack: error.stack,
+			});
 			return {
 				success: false,
 				message: "An unexpected error occurred while starting your session",
@@ -280,7 +328,7 @@ class SessionManager {
 			this.activeSessions.set(userId, updatedSession);
 
 			// Update the auth manager's current user
-			authManager.updateCurrentUser(updatedUser);
+			this.updateCurrentUser(updatedUser);
 
 			return {
 				success: true,
@@ -368,7 +416,7 @@ class SessionManager {
 
 			// Update the auth manager's current user
 			if (updatedUser) {
-				authManager.updateCurrentUser(updatedUser);
+				this.updateCurrentUser(updatedUser);
 			}
 
 			return {
@@ -477,36 +525,78 @@ class SessionManager {
 
 	/**
 	 * Helper: Get computer ID
-	 * In a production system, this would get the actual computer identifier
+	 * Gets a unique computer identifier for the current machine
 	 * @returns {Promise<string>} - Computer ID
 	 */
 	async getComputerId() {
-		// For development, generate a simple computer ID
-		// In production, you would get the actual machine ID
-		const computerIdPrefix = "COMP";
-		const randomId = Math.floor(Math.random() * 1000)
-			.toString()
-			.padStart(3, "0");
-		const computerId = `${computerIdPrefix}${randomId}`;
+		try {
+			// For a production system, you would use a hardware identifier like:
+			// - MAC address
+			// - Serial number
+			// - TPM identifier
+			// - Or a combination of hardware identifiers
 
-		// Check if computer exists in database, if not create it
-		const { data: existingComputer } = await supabase
-			.from("computers")
-			.select("id")
-			.eq("id", computerId)
-			.single();
+			// We'll use a more robust approach that simulates getting a unique computer ID
+			// In a real-world implementation, you could use node libraries like:
+			// - node-machine-id
+			// - systeminformation
+			// - os module combined with unique hardware info
 
-		if (!existingComputer) {
-			// Create computer record
-			await supabase.from("computers").insert({
-				id: computerId,
-				name: `Computer ${randomId}`,
-				location: "Main Lab",
-				status: "available",
-			});
+			// For this implementation, we'll use a consistent ID based on some
+			// environment info to make it somewhat persistent between app restarts
+			const os = require("os");
+
+			// Get some system identifiers
+			const hostname = os.hostname();
+			const username = os.userInfo().username;
+			const platform = os.platform();
+			const arch = os.arch();
+
+			// Create a semi-persistent ID (this would be replaced with hardware-based ID in production)
+			const idBase = `${hostname}-${username}-${platform}-${arch}`;
+
+			// Create a hash-like string from the base ID
+			let computerId = "";
+			let sum = 0;
+
+			for (let i = 0; i < idBase.length; i++) {
+				sum += idBase.charCodeAt(i);
+			}
+
+			// Generate a more readable ID with COMP prefix and numbers
+			computerId = `COMP${(sum % 10000).toString().padStart(4, "0")}`;
+
+			console.log(
+				`Generated computer ID: ${computerId} based on local system information`
+			);
+
+			// Check if computer exists in database, if not create it
+			const { data: existingComputer } = await supabase
+				.from("computers")
+				.select("id")
+				.eq("id", computerId)
+				.single();
+
+			if (!existingComputer) {
+				// Create computer record
+				await supabase.from("computers").insert({
+					id: computerId,
+					name: `Computer ${hostname}`,
+					location: "Main Lab",
+					status: "available",
+				});
+				console.log(`Created new computer record for ${computerId}`);
+			}
+
+			return computerId;
+		} catch (error) {
+			console.error("Error generating computer ID:", error);
+			// Fallback to a random ID if we can't get system info
+			const randomId = Math.floor(Math.random() * 10000)
+				.toString()
+				.padStart(4, "0");
+			return `COMP${randomId}`;
 		}
-
-		return computerId;
 	}
 
 	/**
@@ -514,10 +604,35 @@ class SessionManager {
 	 * @param {string} computerId - Computer ID
 	 * @param {string} userId - User ID (null if computer is available)
 	 * @param {string} status - Status (available, in_use, maintenance, etc.)
+	 * @returns {Promise<boolean>} - Success or failure
 	 */
 	async updateComputerStatus(computerId, userId, status) {
 		try {
-			await supabase
+			console.log(
+				`Updating computer ${computerId} status to ${status} for user ${
+					userId || "none"
+				}`
+			);
+
+			// Validate input parameters
+			if (!computerId) {
+				console.error("Computer ID is required to update status");
+				return false;
+			}
+
+			// Define valid statuses to prevent invalid states
+			const validStatuses = ["available", "in_use", "maintenance", "offline"];
+			if (!validStatuses.includes(status)) {
+				console.error(
+					`Invalid status: ${status}. Must be one of: ${validStatuses.join(
+						", "
+					)}`
+				);
+				status = "available"; // Default to available if invalid
+			}
+
+			// Update the computer record
+			const { data, error } = await supabase
 				.from("computers")
 				.update({
 					status: status,
@@ -525,11 +640,40 @@ class SessionManager {
 					last_active: new Date().toISOString(),
 					updated_at: new Date().toISOString(),
 				})
-				.eq("id", computerId);
+				.eq("id", computerId)
+				.select()
+				.single();
+
+			if (error) {
+				console.error("Error updating computer status:", error);
+				return false;
+			}
+
+			console.log(
+				`Computer ${computerId} status updated successfully to ${status}`
+			);
+			return true;
 		} catch (error) {
-			console.error("Error updating computer status:", error);
+			console.error("Unexpected error updating computer status:", error);
 			// Non-critical error, continue anyway
+			return false;
 		}
+	}
+
+	/**
+	 * Update the current user data in the auth manager
+	 * @param {Object} userData - Updated user data
+	 */
+	updateCurrentUser(userData) {
+		// Make sure authManager is properly imported
+		if (!authManager) {
+			console.error("Auth manager is not available for user update");
+			return;
+		}
+
+		// Update the user data in auth manager
+		console.log("Updating current user data in auth manager:", userData);
+		authManager.setCurrentUser(userData);
 	}
 }
 

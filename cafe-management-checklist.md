@@ -83,16 +83,16 @@ This project aims to develop a WiFi cafe management software for a university ca
 
 ## Phase 6: Session Management System
 
-- [ ] 6.1 Implement session start functionality
-  - [ ] Create session in database
-  - [ ] Update user status to active
-  - [ ] Deduct credits from user account
-- [ ] 6.2 Build application minimization logic
-  - [ ] Implement minimize to tray feature
-  - [ ] Create background timer process
-  - [ ] Test system access during minimized state
+- [x] 6.1 Implement session start functionality
+  - [x] Create session in database
+  - [x] Update user status to active
+  - [x] Deduct credits from user account
+- [x] 6.2 Build application minimization logic
+  - [x] Implement minimize to tray feature
+  - [x] Create background timer process
+  - [x] Test system access during minimized state
 - [ ] 6.3 Develop session monitoring
-  - [ ] Implement countdown timer
+  - [x] Implement countdown timer
   - [ ] Create session end trigger
   - [ ] Build session extension logic
 

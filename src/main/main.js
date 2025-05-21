@@ -468,6 +468,16 @@ const setupIpcHandlers = () => {
 	// Handle startSession request
 	ipcMain.on("startSession", async (event, data) => {
 		console.log("Start session request received:", data);
+		console.log("Data types:", {
+			userId: typeof data.userId,
+			duration: typeof data.duration,
+			credits: typeof data.credits,
+		});
+		console.log("Values:", {
+			userId: data.userId,
+			duration: data.duration,
+			credits: data.credits,
+		});
 
 		try {
 			// Start session using session manager
@@ -480,6 +490,11 @@ const setupIpcHandlers = () => {
 			event.sender.send("sessionStartResponse", response);
 		} catch (err) {
 			console.error("Unexpected error starting session:", err);
+			console.error("Error details:", {
+				name: err.name,
+				message: err.message,
+				stack: err.stack,
+			});
 			event.sender.send("sessionStartResponse", {
 				success: false,
 				message: "An unexpected error occurred",
