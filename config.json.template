@@ -1,0 +1,11 @@
+{
+    "supabaseUrl": "YOUR_SUPABASE_URL_HERE",
+    "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY_HERE",
+    "kioskMode": true,
+    "initialCredits": 100,
+    "creditsPerMinute": 1,
+    "apiEndpoints": {
+        "auth": "/auth/v1",
+        "rest": "/rest/v1"
+    }
+} 

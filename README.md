@@ -41,9 +41,9 @@ This project consists of two main components:
 ## Technology Stack
 
 - **Frontend**: React, Electron
-- **Backend**: Firebase (Authentication, Firestore, Functions)
-- **Database**: Firestore (NoSQL)
-- **Deployment**: Electron Builder, Firebase Hosting
+- **Backend**: Supabase (Authentication, Database, Realtime)
+- **Database**: PostgreSQL (via Supabase)
+- **Deployment**: Electron Builder, Supabase Hosting
 
 ## Project Structure
 
@@ -85,6 +85,40 @@ cafe-management-system/
    ```
    npm run dev
    ```
+
+## Building and Packaging the Application
+
+### Configuring the Build
+
+The project uses Electron Builder for packaging the application. The build configuration is defined in the `package.json` file under the `build` section.
+
+### Building for Windows
+
+1. Prepare your application icon:
+
+   - Replace the placeholder icon at `src/assets/icon.ico` with your actual application icon
+   - The icon should be in .ico format with multiple resolutions (16x16, 32x32, 48x48, 256x256)
+
+2. Using the PowerShell script (recommended):
+   ```
+   .\build-win.ps1
+   ```
+3. Or manually using npm:
+
+   ```
+   npm run build:win
+   ```
+
+4. The installer will be generated in the `dist` folder
+
+### Installer Customization
+
+You can customize the installer by modifying the `nsis` section in `package.json`:
+
+- `oneClick`: Set to `false` to show installation dialogs
+- `allowToChangeInstallationDirectory`: Allow users to change install location
+- `createDesktopShortcut`: Create a desktop shortcut during installation
+- `createStartMenuShortcut`: Create a start menu entry
 
 ## Development Workflow
 

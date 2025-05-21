@@ -116,6 +116,13 @@ const updateSessionView = () => {
 		sessionEndTime.textContent = endTime.toLocaleTimeString();
 	}
 
+	// Ensure minimize button is visible and enabled for active sessions
+	const minimizeBtn = document.getElementById("minimize-btn");
+	if (minimizeBtn) {
+		minimizeBtn.classList.remove("hidden");
+		minimizeBtn.disabled = false;
+	}
+
 	// Start time remaining countdown
 	startSessionCountdown();
 };
@@ -1197,6 +1204,13 @@ const setupMessageListeners = () => {
 
 					// Remove fullscreen mode class from body
 					document.body.classList.remove("fullscreen-mode");
+
+					// Re-enable minimize button if it exists
+					const minimizeBtn = document.getElementById("minimize-btn");
+					if (minimizeBtn) {
+						minimizeBtn.classList.remove("hidden");
+						minimizeBtn.disabled = false;
+					}
 
 					// Allow the window to be non-always-on-top again
 					if (window.api) {

@@ -7,9 +7,12 @@
 		"start": "electron .",
 		"dev": "set NODE_ENV=development && electron .",
 		"build": "electron-builder",
+		"build:win": "electron-builder --win",
+		"pack": "electron-builder --dir",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"test:supabase": "node src/main/supabase-test.js",
-		"setup:supabase": "node src/main/setup-supabase-db.js"
+		"setup:supabase": "node src/main/setup-supabase-db.js",
+		"prepare-config": "powershell -Command \"Copy-Item -Path 'config.json.template' -Destination 'build/config.json'\""
 	},
 	"keywords": [
 		"cafe",
@@ -31,8 +34,33 @@
 		"directories": {
 			"output": "dist"
 		},
+		"files": [
+			"src/**/*",
+			"package.json"
+		],
+		"extraResources": [
+			{
+				"from": "config.json.template",
+				"to": "config.json"
+			}
+		],
 		"win": {
-			"target": "nsis"
+			"target": [
+				{
+					"target": "nsis",
+					"arch": [
+						"x64"
+					]
+				}
+			],
+			"icon": "src/assets/icon.ico"
+		},
+		"nsis": {
+			"oneClick": false,
+			"allowToChangeInstallationDirectory": true,
+			"createDesktopShortcut": true,
+			"createStartMenuShortcut": true,
+			"shortcutName": "Cafe Management System"
 		}
 	},
 	"dependencies": {

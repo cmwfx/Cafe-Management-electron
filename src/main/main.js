@@ -13,14 +13,47 @@ const { realtimeManager } = require("./supabase-realtime");
 const { authManager } = require("./auth-manager");
 const { sessionManager } = require("./session-manager");
 
+// Handle creating/removing shortcuts on Windows when installing/uninstalling
+if (require("electron-squirrel-startup")) {
+	// Handle Windows-specific setup
+	const appFolder = path.dirname(process.execPath);
+	const updateExe = path.resolve(appFolder, "..", "Update.exe");
+	const exeName = path.basename(process.execPath);
+
+	// Handle Squirrel.Windows events
+	if (process.argv.length === 1) {
+		// App is being launched normally, continue with startup
+	} else {
+		const squirrelEvent = process.argv[1];
+		switch (squirrelEvent) {
+			case "--squirrel-install":
+			case "--squirrel-updated":
+				// Create shortcuts here
+				// The following creates shortcuts during installation
+				require("child_process").spawnSync(updateExe, [
+					"--createShortcut",
+					exeName,
+				]);
+				app.quit();
+				break;
+			case "--squirrel-uninstall":
+				// Remove shortcuts here
+				require("child_process").spawnSync(updateExe, [
+					"--removeShortcut",
+					exeName,
+				]);
+				app.quit();
+				break;
+			case "--squirrel-obsolete":
+				app.quit();
+				break;
+		}
+	}
+}
+
 // Get Supabase configuration
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
-
-// Handle creating/removing shortcuts on Windows when installing/uninstalling
-if (require("electron-squirrel-startup")) {
-	app.quit();
-}
 
 // Keep a global reference of the window object to prevent it from being garbage collected
 let mainWindow;
@@ -455,7 +488,23 @@ const setupIpcHandlers = () => {
 	// Handle minimize app request
 	ipcMain.on("minimizeApp", (event) => {
 		if (mainWindow) {
-			mainWindow.minimize();
+			// Set skipTaskbar to true to hide from taskbar
+			mainWindow.setSkipTaskbar(true);
+			// Use hide() instead of minimize() to completely hide from taskbar
+			mainWindow.hide();
+
+			// Ensure the window is properly configured when minimized
+			// This helps with session renewals
+			mainWindow.setAlwaysOnTop(false);
+		}
+	});
+
+	// Handle show app request
+	ipcMain.on("showApp", (event) => {
+		if (mainWindow) {
+			// Make window visible again, but keep it hidden from taskbar
+			mainWindow.show();
+			mainWindow.focus();
 		}
 	});
 
@@ -472,6 +521,8 @@ const setupIpcHandlers = () => {
 			if (!mainWindow.isVisible()) {
 				mainWindow.show();
 			}
+			// Make sure window appears in taskbar again
+			mainWindow.setSkipTaskbar(false);
 			mainWindow.focus();
 
 			// Step 3: Force fullscreen mode
@@ -499,6 +550,14 @@ const setupIpcHandlers = () => {
 			// Keep fullscreen mode since session is still active
 			mainWindow.setFullScreen(true);
 			mainWindow.setKiosk(true);
+
+			// Ensure the window is properly configured for an active session
+			// This is necessary for session renewals after expiration
+			mainWindow.setClosable(false);
+
+			// Reset skipTaskbar property to default value for active sessions
+			// This is important for renewals after expiration
+			mainWindow.setSkipTaskbar(false);
 		}
 	});
 
@@ -617,6 +676,7 @@ const createWindow = () => {
 		autoHideMenuBar: true, // Hide menu bar in all modes
 		frame: !isKioskMode, // Show frame only in development mode
 		resizable: !isKioskMode, // Allow resize only in development mode
+		skipTaskbar: isKioskMode, // Hide from taskbar in kiosk mode
 	});
 
 	// Load the index.html of the app
