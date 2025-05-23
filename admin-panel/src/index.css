@@ -1,0 +1,92 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 32% 20%;
+    --input: 217 32% 20%;
+    --ring: 212 94% 58%;
+    
+    --radius: 0.5rem;
+    
+    --sidebar-background: 222 47% 10%; 
+    --sidebar-foreground: 210 40% 95%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 15%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 222 47% 15%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Custom scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-secondary/30;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 hover:bg-muted-foreground/50 rounded-full transition-colors;
+  }
+  
+  /* Table styles */
+  .data-table {
+    @apply w-full text-sm;
+  }
+  
+  .data-table th {
+    @apply font-medium text-muted-foreground py-3 px-4 text-left;
+  }
+  
+  .data-table td {
+    @apply py-3 px-4 border-t border-border;
+  }
+  
+  .data-table tr:hover {
+    @apply bg-secondary/50;
+  }
+}
