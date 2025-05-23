@@ -133,18 +133,18 @@ This project aims to develop a WiFi cafe management software for a university ca
 
 ## Phase 10: Admin Panel - Foundation
 
-- [ ] 10.1 Set up React project
-  - [ ] Create React app with create-react-app
-  - [ ] Install dependencies (React Router, Supabase, etc.)
-  - [ ] Set up project structure
-- [ ] 10.2 Implement admin authentication
-  - [ ] Create login interface
-  - [ ] Implement authentication logic
-  - [ ] Set up protected routes
-- [ ] 10.3 Design admin dashboard layout
-  - [ ] Create responsive layout
-  - [ ] Implement navigation components
-  - [ ] Design dashboard overview
+- [x] 10.1 Set up React project
+  - [x] Create React app with create-react-app
+  - [x] Install dependencies (React Router, Supabase, etc.)
+  - [x] Set up project structure
+- [x] 10.2 Implement admin authentication
+  - [x] Create login interface
+  - [x] Implement authentication logic
+  - [x] Set up protected routes
+- [x] 10.3 Design admin dashboard layout
+  - [x] Create responsive layout
+  - [x] Implement navigation components
+  - [x] Design dashboard overview
 
 ## Phase 11: Admin Panel - User Management
 
