@@ -1,4 +1,0 @@
-[33m157dcdc[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix: React is not defined error
-[33m0ad6d63[m Fix: Tailwind dark mode error
-[33m89ff9bd[m feat: Implement cafe admin panel UI
-[33md6fd056[m Use tech stack vite_react_shadcn_ts

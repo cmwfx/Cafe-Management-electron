@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafe Management - Admin Panel</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-container">
+        <div class="login-form">
+            <h1>Admin Login</h1>
+            <p>Sign in to manage your cafe</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" id="login-btn">Sign In</button>
+            </form>
+            <div id="login-error" class="error-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard" style="display: none;">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h2>Cafe Admin</h2>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-item active" data-page="overview">Dashboard</button>
+                <button class="nav-item" data-page="active-users">Active Users</button>
+                <button class="nav-item" data-page="all-users">All Users</button>
+                <button class="nav-item logout-btn" id="logout-btn">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Overview Page -->
+            <div id="overview-page" class="page active">
+                <div class="page-header">
+                    <h1>Dashboard</h1>
+                    <p>Café overview and current status</p>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-content">
+                            <h3 id="active-users-count">0</h3>
+                            <p>Active Users</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💳</div>
+                        <div class="stat-content">
+                            <h3 id="total-credits">0</h3>
+                            <p>Available Credits</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-content">
+                            <h3 id="avg-session">0m</h3>
+                            <p>Average Session</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <h3 id="today-revenue">$0.00</h3>
+                            <p>Revenue Today</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Users Preview -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Recent Active Sessions</h2>
+                        <button class="refresh-btn" onclick="refreshDashboard()">Refresh</button>
+                    </div>
+                    <div id="overview-active-users" class="table-container">
+                        <!-- Table will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Users Page -->
+            <div id="active-users-page" class="page">
+                <div class="page-header">
+                    <h1>Active Users</h1>
+                    <p>Manage users currently using the computers</p>
+                </div>
+
+                <!-- Active Users Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3 id="active-count">0</h3>
+                            <p>Active Users</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3 id="avg-time-left">0h 0m</h3>
+                            <p>Average Time Left</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3 id="session-value">$0.00</h3>
+                            <p>Current Session Value</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Users Table -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Active Sessions</h2>
+                        <button class="refresh-btn" onclick="refreshActiveUsers()">Refresh</button>
+                    </div>
+                    <div id="active-users-table" class="table-container">
+                        <!-- Table will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Users Page -->
+            <div id="all-users-page" class="page">
+                <div class="page-header">
+                    <h1>All Users</h1>
+                    <p>Manage all registered users and their credit balances</p>
+                </div>
+
+                <!-- All Users Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3 id="total-users">0</h3>
+                            <p>Total Users</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3 id="active-users">0</h3>
+                            <p>Active Users</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3 id="all-total-credits">0</h3>
+                            <p>Total Credits</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search and Controls -->
+                <div class="controls">
+                    <input type="text" id="user-search" placeholder="Search users..." class="search-input">
+                    <button class="refresh-btn" onclick="refreshAllUsers()">Refresh</button>
+                </div>
+
+                <!-- All Users Table -->
+                <div class="section">
+                    <div id="all-users-table" class="table-container">
+                        <!-- Table will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Credit Edit Modal -->
+    <div id="credit-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Credits</h3>
+                <button class="close-btn" onclick="closeCreditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>User: <span id="modal-user-name"></span></p>
+                <p>Current Credits: <span id="modal-current-credits"></span></p>
+                <div class="form-group">
+                    <label for="new-credits">Credits to Add:</label>
+                    <input type="number" id="new-credits" min="0" step="1" placeholder="Enter amount to add">
+                </div>
+                <div class="form-group">
+                    <label for="credit-reason">Reason (optional):</label>
+                    <input type="text" id="credit-reason" placeholder="e.g., Top-up, Adjustment">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeCreditModal()">Cancel</button>
+                <button class="btn-primary" onclick="updateCredits()">Add Credits</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Messages -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="config.js"></script>
+    <script src="supabase-client.js"></script>
+    <script src="utils.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
