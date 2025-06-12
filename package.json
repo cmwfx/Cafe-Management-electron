@@ -1,10 +1,11 @@
 {
-	"name": "cafe-management-electron",
+	"name": "gaming-cafe-management-electron",
 	"version": "1.0.0",
-	"description": "A comprehensive WiFi cafe management software developed as a university capstone project. This system enables efficient management of computer access based on user credits, with real-time monitoring and reporting capabilities.",
+	"description": "A comprehensive gaming cafe management software developed as a university capstone project. This system enables efficient management of gaming computer access based on user credits, with real-time monitoring and reporting capabilities.",
 	"main": "src/main/main.js",
 	"scripts": {
 		"start": "electron .",
+		"start:production": "set NODE_ENV=production && electron .",
 		"dev": "set NODE_ENV=development && electron .",
 		"build": "electron-builder",
 		"build:win": "electron-builder --win",
@@ -15,9 +16,10 @@
 		"prepare-config": "powershell -Command \"Copy-Item -Path 'config.json.template' -Destination 'build/config.json'\""
 	},
 	"keywords": [
+		"gaming",
 		"cafe",
 		"management",
-		"wifi",
+		"computer",
 		"electron",
 		"kiosk"
 	],
@@ -29,8 +31,8 @@
 		"electron-builder": "^26.0.12"
 	},
 	"build": {
-		"appId": "com.cafemanagementsystem.app",
-		"productName": "Cafe Management System",
+		"appId": "com.gamingcafemanagementsystem.app",
+		"productName": "Gaming Cafe Management System",
 		"directories": {
 			"output": "dist"
 		},
@@ -60,7 +62,7 @@
 			"allowToChangeInstallationDirectory": true,
 			"createDesktopShortcut": true,
 			"createStartMenuShortcut": true,
-			"shortcutName": "Cafe Management System"
+			"shortcutName": "Gaming Cafe Management System"
 		}
 	},
 	"dependencies": {

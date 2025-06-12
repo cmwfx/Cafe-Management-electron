@@ -1,7 +1,7 @@
-# Test Build Script for Cafe Management System
+# Test Build Script for Gaming Cafe Management System
 # This script helps test the packaging process without creating an installer
 
-Write-Host "Starting test build process for Cafe Management System..." -ForegroundColor Green
+Write-Host "Starting test build process for Gaming Cafe Management System..." -ForegroundColor Green
 
 # Check if icon exists and warn if it's still a placeholder
 if (Test-Path -Path "src/assets/icon.ico") {

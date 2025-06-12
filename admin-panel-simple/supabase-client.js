@@ -304,12 +304,30 @@ const DataService = {
 	// All users
 	async getAllUsers() {
 		try {
+			// First, expire old sessions to ensure accurate active status
+			await this.expireOldSessions();
+
+			// Get all profiles
 			const { data: profiles, error } = await supabaseClient
 				.from("profiles")
 				.select("*")
 				.order("updated_at", { ascending: false });
 
 			if (error) throw error;
+
+			// Get all active sessions to determine which users are actually active
+			const { data: activeSessions, error: sessionsError } =
+				await supabaseClient
+					.from("sessions")
+					.select("user_id")
+					.eq("is_active", true);
+
+			if (sessionsError) throw sessionsError;
+
+			// Create a set of active user IDs for fast lookup
+			const activeUserIds = new Set(
+				activeSessions.map((session) => session.user_id)
+			);
 
 			const transformedUsers = profiles.map((profile) => {
 				let lastActive = "Never";
@@ -346,12 +364,8 @@ const DataService = {
 						"No Name",
 					credits: profile.credits,
 					lastActive,
-					status:
-						profile.updated_at &&
-						new Date().getTime() - new Date(profile.updated_at).getTime() <
-							24 * 60 * 60 * 1000
-							? "Active"
-							: "Inactive",
+					// Use the same logic as getActiveSessions - check if user has active sessions
+					status: activeUserIds.has(profile.id) ? "Active" : "Inactive",
 					isAdmin: profile.is_admin,
 				};
 			});

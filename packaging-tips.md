@@ -1,6 +1,6 @@
 # Packaging and Distribution Tips
 
-This document provides guidance for packaging and distributing the Cafe Management System application for Windows.
+This document provides guidance for packaging and distributing the Gaming Cafe Management System application for Windows.
 
 ## Common Issues and Solutions
 

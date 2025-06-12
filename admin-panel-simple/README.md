@@ -1,17 +1,17 @@
-# Cafe Management Admin Panel (Simplified)
+# Gaming Cafe Management Admin Panel (Simplified)
 
-A simplified vanilla HTML, CSS, and JavaScript version of the Cafe Management Admin Panel. This version maintains the core functionality of the original React-based admin panel while being much simpler to deploy and maintain.
+A simplified vanilla HTML, CSS, and JavaScript version of the Gaming Cafe Management Admin Panel. This version maintains the core functionality of the original React-based admin panel while being much simpler to deploy and maintain.
 
 ## Features
 
 ### ✅ **Implemented Features**
 
 - **Admin Authentication**: Secure login for administrators
-- **Dashboard Overview**: Real-time statistics and active session preview
-- **Active Users Management**: Monitor and manage current computer sessions
+- **Dashboard Overview**: Real-time statistics and active gaming session preview
+- **Active Gamers Management**: Monitor and manage current gaming computer sessions
 - **User Management**: View all users, manage credits, search functionality
-- **Credit Management**: Edit user credits with transaction logging
-- **Session Control**: End active sessions remotely
+- **Credit Management**: Edit user credits with transaction logging for gaming time
+- **Session Control**: End active gaming sessions remotely
 - **Auto-refresh**: Automatic data updates for real-time monitoring
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 - **Toast Notifications**: User-friendly success/error messages
@@ -32,7 +32,7 @@ The following features from the original React version have been simplified or r
 
 ## Prerequisites
 
-- A Supabase project with the cafe management database schema
+- A Supabase project with the gaming cafe management database schema
 - Admin user account in your Supabase database
 - Web server to serve static files (can be as simple as VS Code Live Server)
 
@@ -72,7 +72,7 @@ You can find these values in your Supabase project dashboard under Settings > AP
 Ensure your Supabase database has the following tables with proper structure:
 
 - `profiles` - User profiles with credits and admin status
-- `sessions` - Active and completed sessions
+- `sessions` - Active and completed gaming sessions
 - `credit_transactions` - Credit transaction history
 
 Refer to your existing database schema or the provided SQL files.
@@ -127,13 +127,13 @@ Open your browser and navigate to the served location (e.g., `http://localhost:8
 ### Dashboard
 
 - View real-time statistics
-- Monitor recent active sessions
+- Monitor recent active gaming sessions
 - Auto-refreshes every minute
 
-### Active Users
+### Active Gamers
 
-- See all currently active sessions
-- End sessions remotely
+- See all currently active gaming sessions
+- End gaming sessions remotely
 - Monitor time remaining and credits used
 - Auto-refreshes every 30 seconds
 
@@ -141,7 +141,7 @@ Open your browser and navigate to the served location (e.g., `http://localhost:8
 
 - View all registered users
 - Search for specific users
-- Edit user credits
+- Edit user credits for gaming time
 - View user activity status
 - Auto-refreshes every 2 minutes
 
@@ -161,7 +161,7 @@ REFRESH_INTERVALS: {
 
 ### Pricing Settings
 
-Update pricing information to match your cafe's rates:
+Update pricing information to match your gaming cafe's rates:
 
 ```javascript
 PRICING: {
@@ -242,4 +242,4 @@ Tested on:
 
 ## License
 
-This is a simplified version of the original Cafe Management System admin panel. Use according to your project's license terms.
+This is a simplified version of the original Gaming Cafe Management System admin panel. Use according to your project's license terms.

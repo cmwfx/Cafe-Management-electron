@@ -1,12 +1,12 @@
-# Supabase Setup for Cafe Management System
+# Supabase Setup for Gaming Cafe Management System
 
-This document outlines the steps to set up and configure the Supabase backend for the Cafe Management System.
+This document outlines the steps to set up and configure the Supabase backend for the Gaming Cafe Management System.
 
 ## Prerequisites
 
 - A Supabase account (https://supabase.com)
 - Node.js installed locally
-- Access to the Cafe Management System codebase
+- Access to the Gaming Cafe Management System codebase
 
 ## Environment Configuration
 
@@ -50,7 +50,7 @@ node src/main/setup-supabase-db.js
 
 ## Authentication Setup
 
-The Cafe Management System uses Supabase Authentication with email/password:
+The Gaming Cafe Management System uses Supabase Authentication with email/password:
 
 1. In the Supabase dashboard, go to Authentication → Settings
 2. Ensure Email Auth is enabled

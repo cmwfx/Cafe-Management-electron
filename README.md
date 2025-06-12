@@ -1,6 +1,6 @@
-# Cafe Management System
+# Gaming Cafe Management System
 
-A comprehensive WiFi cafe management software developed as a university capstone project. This system enables efficient management of computer access based on user credits, with real-time monitoring and reporting capabilities.
+A comprehensive gaming cafe management software developed as a university capstone project. This system enables efficient management of gaming computer access based on user credits, with real-time monitoring and reporting capabilities.
 
 ## Overview
 
@@ -9,15 +9,15 @@ This project consists of two main components:
 1. **Windows Client Application**: A kiosk-mode Electron application that:
 
    - Provides user authentication (login/signup)
-   - Displays available credits and session options
-   - Manages computer access based on user credits
-   - Handles session timeouts with extension options
+   - Displays available credits and gaming session options
+   - Manages gaming computer access based on user credits
+   - Handles gaming session timeouts with extension options
    - Automatically restarts the computer after session expiration
 
 2. **Admin Panel**: A React-based web application that:
-   - Displays active and inactive users
+   - Displays active and inactive gamers
    - Manages user credits and accounts
-   - Provides detailed usage statistics and reports
+   - Provides detailed gaming usage statistics and reports
    - Visualizes data with interactive graphs and charts
 
 ## Features
@@ -26,16 +26,16 @@ This project consists of two main components:
 
 - Full-screen kiosk mode with exit prevention
 - User authentication system
-- Credit-based session management (1 credit = 1 minute)
-- Session extension capabilities
+- Credit-based gaming session management (1 credit = 1 minute)
+- Gaming session extension capabilities
 - Automatic computer restart functionality
 
 ### Admin Panel
 
 - User management dashboard
-- Credit management system
-- Comprehensive statistics and reporting
-- Real-time user activity monitoring
+- Credit management system for gaming time
+- Comprehensive gaming statistics and reporting
+- Real-time gamer activity monitoring
 - Financial metrics (credit usage to USD conversion)
 
 ## Technology Stack
@@ -48,7 +48,7 @@ This project consists of two main components:
 ## Project Structure
 
 ```
-cafe-management-system/
+gaming-cafe-management-system/
 ├── src/
 │   ├── main/           # Electron main process files
 │   ├── renderer/       # React frontend for Electron app
@@ -122,7 +122,7 @@ You can customize the installer by modifying the `nsis` section in `package.json
 
 ## Development Workflow
 
-Please refer to the `cafe-management-checklist.md` file for a detailed development plan and current progress tracking.
+Please refer to the `gaming-cafe-management-checklist.md` file for a detailed development plan and current progress tracking.
 
 ## License
 

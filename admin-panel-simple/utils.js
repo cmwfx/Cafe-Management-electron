@@ -98,7 +98,6 @@ const TableUtils = {
                     <th>Time Left</th>
                     <th>Credits Used</th>
                     <th>Status</th>
-                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -108,10 +107,7 @@ const TableUtils = {
                     <tr>
                         <td>
                             <div>
-                                <div style="font-weight: 500;">${escapeHtml(
-																	session.name
-																)}</div>
-                                <div style="font-size: 0.75rem; color: #64748b;">@${escapeHtml(
+                                <div style="font-size: 0.75rem; color: #64748b;">${escapeHtml(
 																	session.username
 																)}</div>
                             </div>
@@ -128,13 +124,6 @@ const TableUtils = {
 														}">
                                 ${session.status}
                             </span>
-                        </td>
-                        <td>
-                            <button class="action-btn" onclick="endSession('${
-															session.id
-														}')">
-                                End Session
-                            </button>
                         </td>
                     </tr>
                 `
@@ -173,17 +162,13 @@ const TableUtils = {
                     <tr>
                         <td>
                             <div>
-                                <div style="font-weight: 500;">
-                                    ${escapeHtml(user.name)}
-                                    ${
-																			user.isAdmin
-																				? '<span style="color: #3b82f6; font-size: 0.75rem;">(Admin)</span>'
-																				: ""
-																		}
-                                </div>
-                                <div style="font-size: 0.75rem; color: #64748b;">@${escapeHtml(
+                                <div style="font-size: 0.75rem; color: #64748b;">${escapeHtml(
 																	user.username
-																)}</div>
+																)}${
+											user.isAdmin
+												? ' <span style="color: #3b82f6; font-size: 0.75rem;">(Admin)</span>'
+												: ""
+										}</div>
                             </div>
                         </td>
                         <td style="font-weight: 500;">${user.credits}</td>
@@ -200,7 +185,9 @@ const TableUtils = {
                         <td>
                             <button class="action-btn" onclick="openCreditModal('${
 															user.id
-														}', '${escapeHtml(user.name)}', ${user.credits})">
+														}', '${escapeHtml(user.username)}', ${
+											user.credits
+										})">
                                 Add Credits
                             </button>
                         </td>
@@ -263,31 +250,6 @@ async function updateCredits() {
 		}
 	} catch (error) {
 		Toast.error("Failed to add credits: " + error.message);
-	} finally {
-		Loading.hide();
-	}
-}
-
-// End session function
-async function endSession(sessionId) {
-	if (!confirm("Are you sure you want to end this session?")) {
-		return;
-	}
-
-	try {
-		Loading.show();
-		await DataService.endSession(sessionId);
-		Toast.success("Session ended successfully");
-
-		// Refresh active users data
-		refreshActiveUsers();
-		if (
-			document.querySelector(".nav-item.active").dataset.page === "overview"
-		) {
-			refreshDashboard();
-		}
-	} catch (error) {
-		Toast.error("Failed to end session: " + error.message);
 	} finally {
 		Loading.hide();
 	}

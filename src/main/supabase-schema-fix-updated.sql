@@ -50,4 +50,10 @@ WHERE p.id IS NULL;
 -- Check and fix permissions on the profiles table
 GRANT ALL ON public.profiles TO authenticated;
 GRANT ALL ON public.profiles TO anon;
-GRANT ALL ON public.profiles TO service_role; 
+GRANT ALL ON public.profiles TO service_role;
+
+-- Fix for session status update issue
+-- The current RLS policy prevents users from ending their own sessions
+-- because it requires is_active = true for updates, but ending a session sets is_active = false
+
+-- Drop the existing problematic policy

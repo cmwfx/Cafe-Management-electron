@@ -148,26 +148,47 @@ class SessionManager {
 	 */
 	async extendSession(sessionId, userId, durationMinutes, credits) {
 		try {
-			// Fetch the session to check if it exists and is active
-			const { data: session, error: sessionError } = await supabase
+			// Fetch the session - allow both active and recently expired sessions (within 5 minutes grace period)
+			const { data: sessions, error: sessionError } = await supabase
 				.from("sessions")
 				.select("*")
 				.eq("id", sessionId)
-				.eq("is_active", true)
-				.single();
+				.limit(1);
 
-			if (sessionError || !session) {
+			if (sessionError || !sessions || sessions.length === 0) {
 				return {
 					success: false,
-					message: "Session not found or not active",
+					message: "Session not found",
 				};
 			}
+
+			const session = sessions[0];
 
 			// Verify the session belongs to the user
 			if (session.user_id !== userId) {
 				return {
 					success: false,
 					message: "This session does not belong to you",
+				};
+			}
+
+			// Check if session is within the grace period for extension
+			const now = new Date();
+			const endTime = new Date(session.end_time);
+			const gracePeriodMs = 5 * 60 * 1000; // 5 minutes grace period
+			const timeSinceExpiry = now - endTime;
+
+			// Allow extension if:
+			// 1. Session is still active, OR
+			// 2. Session expired within the grace period
+			const canExtend =
+				session.is_active ||
+				(timeSinceExpiry <= gracePeriodMs && timeSinceExpiry >= 0);
+
+			if (!canExtend) {
+				return {
+					success: false,
+					message: "Session has expired beyond the extension grace period",
 				};
 			}
 
@@ -193,33 +214,80 @@ class SessionManager {
 				};
 			}
 
-			// Calculate new end time - add a buffer of 10 seconds to account for processing delay
-			const currentEndTime = new Date(session.end_time);
+			// Calculate new end time - add duration from current end time or now (whichever is later)
+			const extensionStartTime = endTime > now ? endTime : now;
 			const newEndTime = new Date(
-				currentEndTime.getTime() + durationMinutes * 60 * 1000 + 10000
+				extensionStartTime.getTime() + durationMinutes * 60 * 1000
 			);
 
 			// Start transaction
-			// 1. Update session record
-			const { data: updatedSession, error: updateError } = await supabase
-				.from("sessions")
-				.update({
-					end_time: newEndTime.toISOString(),
-					duration_minutes: session.duration_minutes + durationMinutes,
-					credits_used: session.credits_used + credits,
-				})
-				.eq("id", sessionId)
-				.select()
-				.single();
+			// 1. Try to use the stored procedure first for better permission handling
+			let sessionUpdateSuccess = false;
+			let updatedSession = null;
 
-			if (updateError) {
+			try {
+				const { data: rpcResult, error: rpcError } = await supabase.rpc(
+					"extend_user_session",
+					{
+						session_id: sessionId,
+						end_user_id: userId,
+						new_end_time: newEndTime.toISOString(),
+						new_duration_minutes: session.duration_minutes + durationMinutes,
+						new_credits_used: session.credits_used + credits,
+					}
+				);
+
+				if (!rpcError && rpcResult) {
+					sessionUpdateSuccess = true;
+
+					// Fetch the updated session
+					const { data: updatedSessionData, error: fetchError } = await supabase
+						.from("sessions")
+						.select("*")
+						.eq("id", sessionId)
+						.single();
+
+					if (!fetchError && updatedSessionData) {
+						updatedSession = updatedSessionData;
+					}
+				}
+			} catch (rpcErr) {
+				console.log("RPC method failed, trying direct update:", rpcErr);
+			}
+
+			// 2. Fallback to direct update if RPC failed
+			if (!sessionUpdateSuccess) {
+				const { data: directUpdateResult, error: updateError } = await supabase
+					.from("sessions")
+					.update({
+						is_active: true, // Reactivate the session if it was marked inactive
+						end_time: newEndTime.toISOString(),
+						duration_minutes: session.duration_minutes + durationMinutes,
+						credits_used: session.credits_used + credits,
+					})
+					.eq("id", sessionId)
+					.select()
+					.single();
+
+				if (updateError) {
+					return {
+						success: false,
+						message: "Failed to update session",
+					};
+				}
+
+				updatedSession = directUpdateResult;
+				sessionUpdateSuccess = true;
+			}
+
+			if (!sessionUpdateSuccess) {
 				return {
 					success: false,
 					message: "Failed to update session",
 				};
 			}
 
-			// 2. Deduct credits from user
+			// 3. Deduct credits from user
 			const { data: updatedUser, error: creditError } = await supabase
 				.from("profiles")
 				.update({ credits: user.credits - credits })
@@ -232,6 +300,7 @@ class SessionManager {
 				await supabase
 					.from("sessions")
 					.update({
+						is_active: session.is_active, // Restore original state
 						end_time: session.end_time,
 						duration_minutes: session.duration_minutes,
 						credits_used: session.credits_used,
@@ -244,7 +313,7 @@ class SessionManager {
 				};
 			}
 
-			// 3. Record credit transaction
+			// 4. Record credit transaction
 			const { error: transactionError } = await supabase
 				.from("credit_transactions")
 				.insert({
@@ -283,6 +352,10 @@ class SessionManager {
 	 */
 	async endSession(sessionId, userId) {
 		try {
+			console.log(
+				`[SessionManager] Attempting to end session ${sessionId} for user ${userId}`
+			);
+
 			// Check if the session exists and is active
 			const { data: session, error: sessionError } = await supabase
 				.from("sessions")
@@ -291,64 +364,175 @@ class SessionManager {
 				.eq("is_active", true)
 				.single();
 
-			if (sessionError || !session) {
-				return {
-					success: false,
-					message: "Session not found or not active",
-				};
+			if (sessionError) {
+				console.error(`[SessionManager] Session lookup error:`, sessionError);
+				// Even if we can't find the session, we should still clean up and logout
 			}
 
-			// Verify the session belongs to the user
-			if (session.user_id !== userId) {
+			if (!session && !sessionError) {
+				console.log(
+					`[SessionManager] No active session found with ID ${sessionId}`
+				);
+				// Still continue with cleanup
+			}
+
+			// Verify the session belongs to the user (if we found it)
+			if (session && session.user_id !== userId) {
+				console.log(
+					`[SessionManager] Session user mismatch: expected ${userId}, got ${session.user_id}`
+				);
 				return {
 					success: false,
 					message: "This session does not belong to you",
 				};
 			}
 
-			// Update session to inactive
-			const { error: updateError } = await supabase
-				.from("sessions")
-				.update({
-					is_active: false,
-					end_time: new Date().toISOString(),
-				})
-				.eq("id", sessionId);
+			console.log(
+				`[SessionManager] Session found, attempting to update to inactive`
+			);
 
-			if (updateError) {
-				return {
-					success: false,
-					message: "Failed to end session",
-				};
+			// Try multiple approaches to update the session
+			let sessionUpdateSuccess = false;
+			const currentTime = new Date().toISOString();
+
+			// Approach 1: Try with user context (using RPC function)
+			try {
+				const { data: rpcResult, error: rpcError } = await supabase.rpc(
+					"end_user_session",
+					{
+						session_id: sessionId,
+						end_user_id: userId,
+					}
+				);
+
+				if (!rpcError) {
+					sessionUpdateSuccess = true;
+					console.log(`[SessionManager] Session ended successfully using RPC`);
+				} else {
+					console.log(
+						`[SessionManager] RPC method failed, trying direct update:`,
+						rpcError
+					);
+				}
+			} catch (rpcErr) {
+				console.log(
+					`[SessionManager] RPC method not available, trying direct update`
+				);
 			}
 
-			// Update computer status
-			await this.updateComputerStatus(session.computer_id, null, "available");
+			// Approach 2: If RPC failed, try direct update
+			if (!sessionUpdateSuccess) {
+				try {
+					const { error: updateError } = await supabase
+						.from("sessions")
+						.update({
+							is_active: false,
+							end_time: currentTime,
+						})
+						.eq("id", sessionId)
+						.eq("user_id", userId); // Add user_id filter for security
 
-			// Remove from active sessions
+					if (updateError) {
+						console.error(
+							`[SessionManager] Failed to update session in database:`,
+							updateError
+						);
+						console.log(
+							`[SessionManager] Continuing with local cleanup despite database error`
+						);
+					} else {
+						sessionUpdateSuccess = true;
+						console.log(
+							`[SessionManager] Session updated successfully in database`
+						);
+					}
+				} catch (dbError) {
+					console.error(`[SessionManager] Database update exception:`, dbError);
+					console.log(
+						`[SessionManager] Continuing with local cleanup despite database exception`
+					);
+				}
+			}
+
+			// Always try to update computer status, but don't fail if it doesn't work
+			if (session) {
+				try {
+					await this.updateComputerStatus(
+						session.computer_id,
+						null,
+						"available"
+					);
+					console.log(`[SessionManager] Computer status updated successfully`);
+				} catch (computerError) {
+					console.error(
+						`[SessionManager] Failed to update computer status:`,
+						computerError
+					);
+				}
+			}
+
+			// Always remove from active sessions in memory
 			this.activeSessions.delete(userId);
+			console.log(
+				`[SessionManager] Removed session from memory for user ${userId}`
+			);
 
-			// Fetch updated user data
-			const { data: updatedUser, error: userError } = await supabase
-				.from("profiles")
-				.select("*")
-				.eq("id", userId)
-				.single();
+			// Try to fetch updated user data, but don't fail if we can't
+			let updatedUser = null;
+			try {
+				const { data: userResult, error: userError } = await supabase
+					.from("profiles")
+					.select("*")
+					.eq("id", userId)
+					.single();
 
-			// Update the auth manager's current user
+				if (userError) {
+					console.error(
+						`[SessionManager] Failed to fetch updated user data:`,
+						userError
+					);
+				} else {
+					updatedUser = userResult;
+				}
+			} catch (userFetchError) {
+				console.error(
+					`[SessionManager] Exception fetching user data:`,
+					userFetchError
+				);
+			}
+
+			// Update the auth manager's current user if we have the data
 			if (updatedUser) {
 				this.updateCurrentUser(updatedUser);
 			}
 
+			// Always return success for local cleanup, even if database operations failed
+			console.log(
+				`[SessionManager] Session cleanup completed for user ${userId} (DB update: ${
+					sessionUpdateSuccess ? "success" : "failed but continued"
+				})`
+			);
+
 			return {
 				success: true,
-				message: "Session ended successfully",
+				message: sessionUpdateSuccess
+					? "Session ended successfully"
+					: "Session ended locally (database update failed but cleanup completed)",
 				userData: updatedUser || null,
 			};
 		} catch (error) {
+			console.error(`[SessionManager] Unexpected error ending session:`, error);
+
+			// Even if there's an unexpected error, try to clean up locally
+			this.activeSessions.delete(userId);
+			console.log(
+				`[SessionManager] Emergency cleanup - removed session from memory for user ${userId}`
+			);
+
 			return {
-				success: false,
-				message: "An unexpected error occurred while ending your session",
+				success: true, // Return success to allow logout to proceed
+				message: `Session cleanup completed despite errors: ${error.message}`,
+				userData: null,
 			};
 		}
 	}
@@ -356,16 +540,36 @@ class SessionManager {
 	/**
 	 * Get active session for a user
 	 * @param {string} userId - The user ID
+	 * @param {boolean} allowGracePeriod - Whether to include sessions within grace period (default: false)
 	 * @returns {Promise<{success: boolean, sessionData: object}>}
 	 */
-	async getActiveSession(userId) {
+	async getActiveSession(userId, allowGracePeriod = false) {
 		try {
 			// Check if we have the session in memory
 			if (this.activeSessions.has(userId)) {
-				return {
-					success: true,
-					sessionData: this.activeSessions.get(userId),
-				};
+				const memorySession = this.activeSessions.get(userId);
+
+				// If allowing grace period, check if the session is still valid
+				if (allowGracePeriod) {
+					const now = new Date();
+					const endTime = new Date(memorySession.end_time);
+					const gracePeriodMs = 5 * 60 * 1000; // 5 minutes grace period
+					const timeSinceExpiry = now - endTime;
+
+					// Still valid if not expired or within grace period
+					if (endTime >= now || timeSinceExpiry <= gracePeriodMs) {
+						return {
+							success: true,
+							sessionData: memorySession,
+						};
+					}
+				} else if (new Date(memorySession.end_time) >= new Date()) {
+					// Normal check - session must not be expired
+					return {
+						success: true,
+						sessionData: memorySession,
+					};
+				}
 			}
 
 			// If not in memory, check the database
@@ -389,20 +593,32 @@ class SessionManager {
 			// Check if the session is expired
 			const now = new Date();
 			const endTime = new Date(session.end_time);
+			const gracePeriodMs = 5 * 60 * 1000; // 5 minutes grace period
+			const timeSinceExpiry = now - endTime;
 
 			if (endTime < now) {
-				// Session has expired, mark it as inactive
-				await supabase
-					.from("sessions")
-					.update({
-						is_active: false,
-					})
-					.eq("id", session.id);
+				// Session has expired
+				if (allowGracePeriod && timeSinceExpiry <= gracePeriodMs) {
+					// Within grace period - don't mark as inactive, return the session
+					this.activeSessions.set(userId, session);
+					return {
+						success: true,
+						sessionData: session,
+					};
+				} else {
+					// Expired beyond grace period - mark as inactive
+					await supabase
+						.from("sessions")
+						.update({
+							is_active: false,
+						})
+						.eq("id", session.id);
 
-				return {
-					success: false,
-					message: "Session has expired",
-				};
+					return {
+						success: false,
+						message: "Session has expired",
+					};
+				}
 			}
 
 			// Store the session in memory for faster access next time

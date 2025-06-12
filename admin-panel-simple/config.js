@@ -1,4 +1,4 @@
-// Configuration file for the Cafe Management Admin Panel
+// Configuration file for the Gaming Cafe Management Admin Panel
 // Replace these with your actual Supabase credentials
 
 const CONFIG = {
@@ -6,18 +6,22 @@ const CONFIG = {
 	SUPABASE_ANON_KEY:
 		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5aWVpYWh5ZWJ1emZocmlhd2JlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3NzYzMDYsImV4cCI6MjA2MzM1MjMwNn0.RebccTbq4z7zEU700bsf7FEaFkZr4rsBU2CHPPLKJII",
 
-	// Auto-refresh intervals (in milliseconds)
 	REFRESH_INTERVALS: {
 		DASHBOARD: 60000, // 1 minute
 		ACTIVE_USERS: 30000, // 30 seconds
 		ALL_USERS: 120000, // 2 minutes
 	},
 
-	// Pricing configuration (matches your backend configuration)
 	PRICING: {
-		PER_MINUTE: 0.1,
-		PER_HOUR: 5.0,
-		MINIMUM_MINUTES: 15,
+		PER_MINUTE: 0.0167, // $0.10 per credit/minute
+		PER_HOUR: 1.0, // $6.00 per hour (60 credits × $0.10)
+		MINIMUM_MINUTES: 1, // Minimum session time in minutes
+
+		// System Logic:
+		// - Time: 1 minute = 1 credit
+		// - Time: 60 minutes = 60 credits = 1 hour
+		// - Money: credits_used × PER_MINUTE = total_revenue
+		// - Example: 17 credits used = 17 minutes = 17 × $0.10 = $1.70
 	},
 };
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cafe Management - Admin Panel</title>
+    <title>Gaming Cafe Management - Admin Panel</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
@@ -14,7 +14,7 @@
     <div id="login-screen" class="login-container">
         <div class="login-form">
             <h1>Admin Login</h1>
-            <p>Sign in to manage your cafe</p>
+            <p>Sign in to manage your gaming cafe</p>
             <form id="login-form">
                 <div class="form-group">
                     <label for="email">Email</label>
@@ -35,11 +35,11 @@
         <!-- Navigation -->
         <nav class="navbar">
             <div class="nav-brand">
-                <h2>Cafe Admin</h2>
+                <h2>Gaming Cafe Admin</h2>
             </div>
             <div class="nav-menu">
                 <button class="nav-item active" data-page="overview">Dashboard</button>
-                <button class="nav-item" data-page="active-users">Active Users</button>
+                <button class="nav-item" data-page="active-users">Active Gamers</button>
                 <button class="nav-item" data-page="all-users">All Users</button>
                 <button class="nav-item logout-btn" id="logout-btn">Logout</button>
             </div>
@@ -51,16 +51,16 @@
             <div id="overview-page" class="page active">
                 <div class="page-header">
                     <h1>Dashboard</h1>
-                    <p>Café overview and current status</p>
+                    <p>Gaming Café overview and current status</p>
                 </div>
 
                 <!-- Stats Cards -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon">👥</div>
+                        <div class="stat-icon">🎮</div>
                         <div class="stat-content">
                             <h3 id="active-users-count">0</h3>
-                            <p>Active Users</p>
+                            <p>Active Gamers</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -74,7 +74,7 @@
                         <div class="stat-icon">⏱️</div>
                         <div class="stat-content">
                             <h3 id="avg-session">0m</h3>
-                            <p>Average Session</p>
+                            <p>Average Gaming Session</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -89,7 +89,7 @@
                 <!-- Active Users Preview -->
                 <div class="section">
                     <div class="section-header">
-                        <h2>Recent Active Sessions</h2>
+                        <h2>Recent Active Gaming Sessions</h2>
                         <button class="refresh-btn" onclick="refreshDashboard()">Refresh</button>
                     </div>
                     <div id="overview-active-users" class="table-container">
@@ -101,8 +101,8 @@
             <!-- Active Users Page -->
             <div id="active-users-page" class="page">
                 <div class="page-header">
-                    <h1>Active Users</h1>
-                    <p>Manage users currently using the computers</p>
+                    <h1>Active Gamers</h1>
+                    <p>Manage users currently using the gaming computers</p>
                 </div>
 
                 <!-- Active Users Stats -->
@@ -110,7 +110,7 @@
                     <div class="stat-card">
                         <div class="stat-content">
                             <h3 id="active-count">0</h3>
-                            <p>Active Users</p>
+                            <p>Active Gamers</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -130,7 +130,7 @@
                 <!-- Active Users Table -->
                 <div class="section">
                     <div class="section-header">
-                        <h2>Active Sessions</h2>
+                        <h2>Active Gaming Sessions</h2>
                         <button class="refresh-btn" onclick="refreshActiveUsers()">Refresh</button>
                     </div>
                     <div id="active-users-table" class="table-container">
@@ -143,7 +143,7 @@
             <div id="all-users-page" class="page">
                 <div class="page-header">
                     <h1>All Users</h1>
-                    <p>Manage all registered users and their credit balances</p>
+                    <p>Manage all registered users and their gaming credit balances</p>
                 </div>
 
                 <!-- All Users Stats -->
@@ -157,13 +157,13 @@
                     <div class="stat-card">
                         <div class="stat-content">
                             <h3 id="active-users">0</h3>
-                            <p>Active Users</p>
+                            <p>Active Gamers</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-content">
                             <h3 id="all-total-credits">0</h3>
-                            <p>Total Credits</p>
+                            <p>Total Gaming Credits</p>
                         </div>
                     </div>
                 </div>
@@ -188,24 +188,24 @@
     <div id="credit-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Add Credits</h3>
+                <h3>Add Gaming Credits</h3>
                 <button class="close-btn" onclick="closeCreditModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <p>User: <span id="modal-user-name"></span></p>
-                <p>Current Credits: <span id="modal-current-credits"></span></p>
+                <p>Current Gaming Credits: <span id="modal-current-credits"></span></p>
                 <div class="form-group">
-                    <label for="new-credits">Credits to Add:</label>
+                    <label for="new-credits">Gaming Credits to Add:</label>
                     <input type="number" id="new-credits" min="0" step="1" placeholder="Enter amount to add">
                 </div>
                 <div class="form-group">
                     <label for="credit-reason">Reason (optional):</label>
-                    <input type="text" id="credit-reason" placeholder="e.g., Top-up, Adjustment">
+                    <input type="text" id="credit-reason" placeholder="e.g., Top-up, Gaming Credit Adjustment">
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeCreditModal()">Cancel</button>
-                <button class="btn-primary" onclick="updateCredits()">Add Credits</button>
+                <button class="btn-primary" onclick="updateCredits()">Add Gaming Credits</button>
             </div>
         </div>
     </div>

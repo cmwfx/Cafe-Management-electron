@@ -1,7 +1,7 @@
-# Cafe Management System Build Script for Windows
-# This script helps automate the build process for the Cafe Management System
+# Gaming Cafe Management System Build Script for Windows
+# This script helps automate the build process for the Gaming Cafe Management System
 
-Write-Host "Starting build process for Cafe Management System..." -ForegroundColor Green
+Write-Host "Starting build process for Gaming Cafe Management System..." -ForegroundColor Green
 
 # Check if node_modules exists
 if (-not (Test-Path -Path "node_modules")) {

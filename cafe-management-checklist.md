@@ -1,11 +1,11 @@
-# Cafe Management Software Development Checklist
+# Gaming Cafe Management Software Development Checklist
 
 ### Overview
 
-This project aims to develop a WiFi cafe management software for a university capstone project. The system consists of two main components:
+This project aims to develop a gaming cafe management software for a university capstone project. The system consists of two main components:
 
-1. **Windows Client Application**: A kiosk-mode electron application that manages user sessions and computer access
-2. **Admin Panel**: A web-based interface for administrators to manage users, credits, and view statistics
+1. **Windows Client Application**: A kiosk-mode electron application that manages user gaming sessions and gaming computer access
+2. **Admin Panel**: A web-based interface for administrators to manage users, credits, and view gaming statistics
 
 ## Phase 1: Project Setup & Environment Configuration
 

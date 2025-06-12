@@ -1,4 +1,11 @@
-// Main application logic for the Cafe Management Admin Panel
+// Main application logic for the Gaming Cafe Management Admin Panel
+
+// Global variables
+let currentPage = "overview";
+let refreshInterval = null;
+
+console.log("🚀 Gaming Cafe Admin Panel starting...");
+
 let isAuthenticated = false;
 
 // Application initialization

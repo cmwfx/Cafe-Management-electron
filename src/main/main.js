@@ -5,6 +5,7 @@ const {
 	globalShortcut,
 	dialog,
 	ipcMain,
+	shell,
 } = require("electron");
 const path = require("path");
 const { supabase } = require("./supabase-config");
@@ -12,6 +13,7 @@ const { testSupabaseConnection } = require("./supabase-test");
 const { realtimeManager } = require("./supabase-realtime");
 const { authManager } = require("./auth-manager");
 const { sessionManager } = require("./session-manager");
+const { spawn, exec, execFile } = require("child_process");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require("electron-squirrel-startup")) {
@@ -58,13 +60,248 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 // Keep a global reference of the window object to prevent it from being garbage collected
 let mainWindow;
 
+// Store launched application types for cleanup (instead of tracking individual processes)
+let launchedAppTypes = new Map(); // userId -> Set of app executable names
+
 // Flag to determine if the app is running in kiosk mode
 let isKioskMode = process.env.NODE_ENV !== "development";
 let isDevelopment = process.env.NODE_ENV === "development";
 
-// Force production mode and kiosk mode
-isDevelopment = false;
+// Enable kiosk mode for production deployment
 isKioskMode = true;
+isDevelopment = false;
+
+// Helper function to check if a process is running by executable name
+const isProcessRunning = (executableName) => {
+	return new Promise((resolve) => {
+		const processName = executableName.replace(".exe", "");
+
+		console.log(`[Main] Checking if ${executableName} is running...`);
+
+		// Use tasklist command which is more reliable than PowerShell for process detection
+		exec(
+			`tasklist /FI "IMAGENAME eq ${executableName}" /FO CSV`,
+			{ timeout: 3000 },
+			(error, stdout, stderr) => {
+				if (error) {
+					console.log(
+						`[Main] ${executableName} is not running (tasklist error)`
+					);
+					resolve(false);
+				} else {
+					// Check if the output contains the process name (more than just the header)
+					const lines = stdout.trim().split("\n");
+					if (lines.length > 1) {
+						console.log(`[Main] ${executableName} is running`);
+						resolve(true);
+					} else {
+						console.log(`[Main] ${executableName} is not running`);
+						resolve(false);
+					}
+				}
+			}
+		);
+	});
+};
+
+// Helper function to bring kiosk window to front when session expires
+const bringKioskToFront = () => {
+	if (!mainWindow) return;
+
+	console.log(`[Main] Bringing kiosk window to front`);
+
+	// Set window to highest z-order level
+	mainWindow.setAlwaysOnTop(true, "screen-saver");
+
+	// Ensure window is visible and focused
+	if (mainWindow.isMinimized()) {
+		mainWindow.restore();
+	}
+	mainWindow.show();
+	mainWindow.focus();
+
+	// Ensure fullscreen/kiosk mode
+	if (isKioskMode) {
+		mainWindow.setKiosk(true);
+		mainWindow.setFullScreen(true);
+	}
+
+	console.log(`[Main] Kiosk window brought to front successfully`);
+};
+
+// Helper function to send kiosk window to back when session is active
+const sendKioskToBack = () => {
+	if (!mainWindow) return;
+
+	console.log(`[Main] Sending kiosk window to back`);
+
+	// Turn off always-on-top flag
+	mainWindow.setAlwaysOnTop(false);
+
+	// Relinquish focus
+	mainWindow.blur();
+
+	// Keep window visible but unfocused
+	mainWindow.showInactive();
+
+	// In development mode, keep some visibility
+	if (isDevelopment) {
+		mainWindow.setKiosk(false);
+		mainWindow.setFullScreen(false);
+	}
+
+	console.log(`[Main] Kiosk window sent to back successfully`);
+};
+
+// Function to launch an application
+const launchApplication = (appPath, userId) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			// Extract executable name from path
+			const path = require("path");
+			const executableName = path.basename(appPath);
+
+			console.log(
+				`[Main] Attempting to launch ${executableName} for user ${userId}`
+			);
+
+			// Check if the application is already running
+			const isRunning = await isProcessRunning(executableName);
+
+			if (isRunning) {
+				console.log(
+					`[Main] ${executableName} is already running, sending kiosk to background`
+				);
+
+				// Instead of opening a new instance, send the kiosk to the background
+				sendKioskToBack();
+
+				// Update tracking without launching new instance
+				if (!launchedAppTypes.has(userId)) {
+					launchedAppTypes.set(userId, new Set());
+				}
+				launchedAppTypes.get(userId).add(executableName);
+
+				resolve();
+				return;
+			}
+
+			// If not running, launch new instance and send kiosk to background
+			console.log(`[Main] Launching new instance of ${executableName}`);
+
+			// Use PowerShell to launch the application with proper path escaping
+			// Use single quotes to avoid issues with special characters and spaces
+			const psCommand = `Start-Process -FilePath '${appPath}' -PassThru`;
+
+			exec(
+				`powershell.exe -Command "${psCommand}"`,
+				(error, stdout, stderr) => {
+					if (error) {
+						console.error("Failed to launch application:", error);
+						reject(error);
+						return;
+					}
+
+					// Track the application type for cleanup later (by executable name)
+					if (!launchedAppTypes.has(userId)) {
+						launchedAppTypes.set(userId, new Set());
+					}
+					launchedAppTypes.get(userId).add(executableName);
+
+					// Send kiosk to background after successful launch
+					sendKioskToBack();
+
+					console.log(
+						`[Main] Tracked application ${executableName} for user ${userId} and sent kiosk to background`
+					);
+					resolve();
+				}
+			);
+		} catch (error) {
+			reject(error);
+		}
+	});
+};
+
+// Function to close all launched applications for a user using taskkill
+const closeUserApplications = (userId) => {
+	console.log(`[Main] Closing applications for user ${userId}`);
+
+	const userAppTypes = launchedAppTypes.get(userId);
+	if (!userAppTypes || userAppTypes.size === 0) {
+		console.log(`[Main] No applications to close for user ${userId}`);
+		return;
+	}
+
+	// Convert Set to Array for processing
+	const appList = Array.from(userAppTypes);
+	console.log(`[Main] Closing applications: ${appList.join(", ")}`);
+
+	// Close each application type using taskkill
+	appList.forEach((executableName) => {
+		console.log(`[Main] Terminating all instances of ${executableName}`);
+
+		// Use taskkill to force close all instances of the executable
+		// /IM = Image Name, /T = include child processes, /F = force termination
+		execFile(
+			"taskkill",
+			["/IM", executableName, "/T", "/F"],
+			(error, stdout, stderr) => {
+				if (error) {
+					// This is expected if the app is not running, so just log it
+					console.log(
+						`[Main] ${executableName} may not be running or already closed: ${error.message}`
+					);
+				} else {
+					console.log(`[Main] Successfully terminated ${executableName}`);
+				}
+			}
+		);
+	});
+
+	// Clear the tracked applications for this user
+	launchedAppTypes.set(userId, new Set());
+	console.log(`[Main] Cleared application tracking for user ${userId}`);
+};
+
+// Function to forcefully close all common applications (brute force cleanup)
+const forceCloseAllApplications = () => {
+	console.log(`[Main] Force closing all common user applications`);
+
+	// List of common applications that users might launch
+	const commonApps = [
+		"msedge.exe", // Microsoft Edge
+		"chrome.exe", // Google Chrome
+		"firefox.exe", // Mozilla Firefox
+		"notepad.exe", // Notepad
+		"calc.exe", // Calculator
+		"mspaint.exe", // Paint
+		"winword.exe", // Microsoft Word
+		"excel.exe", // Microsoft Excel
+		"powerpnt.exe", // Microsoft PowerPoint
+		"steam.exe", // Steam
+		"discord.exe", // Discord
+		"spotify.exe", // Spotify
+		"vlc.exe", // VLC Media Player
+		"code.exe", // Visual Studio Code
+		"notepad++.exe", // Notepad++
+	];
+
+	commonApps.forEach((executableName) => {
+		execFile(
+			"taskkill",
+			["/IM", executableName, "/T", "/F"],
+			(error, stdout, stderr) => {
+				if (error) {
+					// This is expected if the app is not running
+					console.log(`[Main] ${executableName} not running or already closed`);
+				} else {
+					console.log(`[Main] Force terminated ${executableName}`);
+				}
+			}
+		);
+	});
+};
 
 // Set up IPC handlers for communication with renderer process
 const setupIpcHandlers = () => {
@@ -341,6 +578,37 @@ const setupIpcHandlers = () => {
 				success: true,
 				message: "Logged out successfully",
 			});
+
+			// Restart the computer after logout using PowerShell
+			try {
+				const { exec } = require("child_process");
+				// Use PowerShell command to restart the computer
+				exec(
+					'powershell.exe -Command "Restart-Computer -Force"',
+					(error, stdout, stderr) => {
+						if (error) {
+							// Try alternative PowerShell command
+							exec(
+								'shutdown.exe /r /t 5 /c "Logging out and restarting computer"',
+								(fallbackError) => {
+									if (fallbackError) {
+										event.sender.send("notification", {
+											type: "error",
+											message:
+												"Failed to restart computer. Please restart manually.",
+										});
+									}
+								}
+							);
+						}
+					}
+				);
+			} catch (restartError) {
+				event.sender.send("notification", {
+					type: "error",
+					message: "Failed to restart computer. Please restart manually.",
+				});
+			}
 		} catch (error) {
 			event.sender.send("logoutResponse", {
 				success: false,
@@ -413,6 +681,11 @@ const setupIpcHandlers = () => {
 				credits
 			);
 
+			// If session started successfully, send kiosk to back
+			if (result.success) {
+				sendKioskToBack();
+			}
+
 			// Send response to renderer
 			event.sender.send("sessionStartResponse", result);
 		} catch (err) {
@@ -453,18 +726,109 @@ const setupIpcHandlers = () => {
 	// Handle session end request
 	ipcMain.on("endSession", async (event, data) => {
 		try {
-			// End the session
+			console.log(`[Main] End session request received:`, data);
+
+			// Step 1: Clean up tracked applications for this user
+			console.log(
+				`[Main] Cleaning up tracked user applications for user ${data.userId}`
+			);
+			closeUserApplications(data.userId);
+
+			// Step 2: Force close all common applications (brute force cleanup)
+			console.log(`[Main] Performing brute force application cleanup`);
+			setTimeout(() => {
+				forceCloseAllApplications();
+			}, 1000); // Wait 1 second to let tracked apps close first
+
+			// Step 3: End the session in database
+			console.log(`[Main] Calling sessionManager.endSession`);
 			const result = await sessionManager.endSession(
 				data.sessionId,
 				data.userId
 			);
 
-			// Send response to renderer
-			event.sender.send("sessionEndResponse", result);
-		} catch (err) {
+			console.log(`[Main] End session result:`, result);
+
+			// Always send success response and trigger logout, regardless of database issues
+			// The session manager now handles database failures gracefully
 			event.sender.send("sessionEndResponse", {
+				success: true,
+				message: result.message || "Session ended successfully",
+				userData: result.userData,
+			});
+
+			// Also send a logout signal to ensure the user gets logged out
+			console.log(`[Main] Sending logout signal after session end`);
+			setTimeout(() => {
+				if (mainWindow && mainWindow.webContents) {
+					mainWindow.webContents.send("forceLogout");
+				}
+			}, 2000); // Wait 2 seconds to ensure app cleanup completes
+		} catch (err) {
+			console.error(`[Main] Error in endSession handler:`, err);
+
+			// Even if there's an error, clean up and logout
+			console.log(`[Main] Emergency cleanup and logout due to error`);
+			closeUserApplications(data.userId);
+
+			// Force close all apps as emergency measure
+			setTimeout(() => {
+				forceCloseAllApplications();
+			}, 500);
+
+			event.sender.send("sessionEndResponse", {
+				success: true, // Return success to allow logout
+				message: `Session cleanup completed: ${err.message}`,
+			});
+
+			// Force logout in case of errors
+			setTimeout(() => {
+				if (mainWindow && mainWindow.webContents) {
+					mainWindow.webContents.send("forceLogout");
+				}
+			}, 2000);
+		}
+	});
+
+	// Handle logout and close other apps request
+	ipcMain.on("logoutAndCloseOtherApps", async (event, data) => {
+		try {
+			console.log(`[Main] Logout and close apps request received:`, data);
+
+			// Clean up any applications launched by this user first
+			if (data && data.userId) {
+				console.log(`[Main] Cleaning up applications for user ${data.userId}`);
+				closeUserApplications(data.userId);
+			}
+
+			// Force close all common applications
+			console.log(`[Main] Force closing all applications for logout`);
+			forceCloseAllApplications();
+
+			// Clear any stored session data in the main process
+			if (mainWindow && mainWindow.webContents) {
+				// Clear any app state and return to login screen
+				setTimeout(() => {
+					mainWindow.webContents.send("forceLogout");
+				}, 1500); // Wait for app cleanup to complete
+			}
+
+			event.sender.send("logoutAndCloseOtherAppsResponse", {
+				success: true,
+				message: "Logged out successfully",
+			});
+		} catch (error) {
+			console.error("Error in logoutAndCloseOtherApps:", error);
+
+			// Even on error, try to clean up
+			if (data && data.userId) {
+				closeUserApplications(data.userId);
+			}
+			forceCloseAllApplications();
+
+			event.sender.send("logoutAndCloseOtherAppsResponse", {
 				success: false,
-				message: "Failed to end session",
+				message: "Failed to logout and close other apps",
 			});
 		}
 	});
@@ -485,79 +849,28 @@ const setupIpcHandlers = () => {
 		}
 	});
 
-	// Handle minimize app request
-	ipcMain.on("minimizeApp", (event) => {
-		if (mainWindow) {
-			// Set skipTaskbar to true to hide from taskbar
-			mainWindow.setSkipTaskbar(true);
-			// Use hide() instead of minimize() to completely hide from taskbar
-			mainWindow.hide();
-
-			// Ensure the window is properly configured when minimized
-			// This helps with session renewals
-			mainWindow.setAlwaysOnTop(false);
-		}
-	});
-
-	// Handle show app request
-	ipcMain.on("showApp", (event) => {
-		if (mainWindow) {
-			// Make window visible again, but keep it hidden from taskbar
-			mainWindow.show();
-			mainWindow.focus();
-		}
-	});
-
 	// Handle session expired notification
-	ipcMain.on("sessionExpired", (event) => {
-		// Notify the main process that the session has expired
+	ipcMain.on("sessionExpired", async (event) => {
+		// When session expires, bring kiosk window to front
+		console.log(`[Main] Session expired - bringing kiosk to front`);
+
+		// Bring the kiosk window to the front
+		bringKioskToFront();
+
+		// Notify renderer about session expiration
 		if (mainWindow && mainWindow.webContents) {
-			// Step 1: Ensure window is restored (not minimized)
-			if (mainWindow.isMinimized()) {
-				mainWindow.restore();
-			}
-
-			// Step 2: Ensure window is visible and focused
-			if (!mainWindow.isVisible()) {
-				mainWindow.show();
-			}
-			// Make sure window appears in taskbar again
-			mainWindow.setSkipTaskbar(false);
-			mainWindow.focus();
-
-			// Step 3: Force fullscreen mode
-			mainWindow.setKiosk(true);
-			mainWindow.setFullScreen(true);
-
-			// Step 4: Force window to be always on top PERMANENTLY to ensure it stays in foreground
-			// Using 'screen-saver' level to ensure it's above all other windows
-			mainWindow.setAlwaysOnTop(true, "screen-saver");
-
-			// Step 5: Notify renderer about session expiration
 			mainWindow.webContents.send("sessionExpiredUI");
-
-			// Step 6: Remove the timeout that would disable always-on-top
-			// We want it to STAY on top until user extends the session
 		}
 	});
 
-	// Handle session extended notification (disable always-on-top)
+	// Handle session extended notification
 	ipcMain.on("sessionExtended", (event) => {
+		// Keep the kiosk in the background since session is still active
+		console.log(`[Main] Session extended - keeping kiosk in background`);
+
+		// Ensure the window stays in the background
 		if (mainWindow) {
-			// Disable always-on-top when session is extended
-			mainWindow.setAlwaysOnTop(false);
-
-			// Keep fullscreen mode since session is still active
-			mainWindow.setFullScreen(true);
-			mainWindow.setKiosk(true);
-
-			// Ensure the window is properly configured for an active session
-			// This is necessary for session renewals after expiration
-			mainWindow.setClosable(false);
-
-			// Reset skipTaskbar property to default value for active sessions
-			// This is important for renewals after expiration
-			mainWindow.setSkipTaskbar(false);
+			sendKioskToBack();
 		}
 	});
 
@@ -566,30 +879,109 @@ const setupIpcHandlers = () => {
 		// This should be properly secured in production
 		// Only allow this if the user has appropriate permissions
 
-		// For Windows
+		// For Windows using PowerShell
 		try {
 			const { exec } = require("child_process");
+			// Primary method: Use PowerShell Restart-Computer command
 			exec(
-				'shutdown /r /t 60 /c "System restart scheduled by Cafe Management System"',
+				'powershell.exe -Command "Restart-Computer -Force"',
 				(error, stdout, stderr) => {
 					if (error) {
-						event.sender.send("notification", {
-							type: "error",
-							message: "Failed to restart computer. Access denied.",
-						});
-						return;
-					}
+						// Fallback method: Use Windows shutdown command
+						exec(
+							'shutdown.exe /r /t 10 /c "System restart scheduled by Gaming Cafe Management System"',
+							(fallbackError, fallbackStdout, fallbackStderr) => {
+								if (fallbackError) {
+									event.sender.send("notification", {
+										type: "error",
+										message: "Failed to restart computer. Access denied.",
+									});
+									return;
+								}
 
-					event.sender.send("notification", {
-						type: "success",
-						message: "Computer will restart in 60 seconds.",
-					});
+								event.sender.send("notification", {
+									type: "success",
+									message: "Computer will restart in 10 seconds.",
+								});
+							}
+						);
+					} else {
+						event.sender.send("notification", {
+							type: "success",
+							message: "Computer restart initiated.",
+						});
+					}
 				}
 			);
 		} catch (error) {
 			event.sender.send("notification", {
 				type: "error",
 				message: "Failed to restart computer.",
+			});
+		}
+	});
+
+	// Handle application launch request
+	ipcMain.on("launchApplication", async (event, data) => {
+		try {
+			console.log(`[Main] Launch application request received:`, data);
+
+			// Verify user has an active session
+			const sessionResult = await sessionManager.getActiveSession(data.userId);
+
+			if (!sessionResult.success) {
+				console.log(`[Main] User ${data.userId} has no active session`);
+				event.sender.send("applicationLaunched", {
+					success: false,
+					message: "You must have an active session to launch applications",
+				});
+				return;
+			}
+
+			console.log(
+				`[Main] User has active session, launching application: ${data.appPath}`
+			);
+
+			// Launch the application
+			await launchApplication(data.appPath, data.userId);
+
+			console.log(`[Main] Application launched successfully`);
+
+			// Send success response
+			event.sender.send("applicationLaunched", {
+				success: true,
+				message: "Application launched successfully",
+			});
+		} catch (err) {
+			console.error(`[Main] Failed to launch application:`, err);
+			event.sender.send("applicationLaunched", {
+				success: false,
+				message: `Failed to launch application: ${err.message}`,
+			});
+		}
+	});
+
+	// Handle session end cleanup
+	ipcMain.on("cleanupUserProcesses", (event, userId) => {
+		closeUserApplications(userId);
+		event.sender.send("processesCleanedUp", { success: true });
+	});
+
+	// Handle manual kiosk background switching
+	ipcMain.on("sendKioskToBackground", (event) => {
+		try {
+			console.log(`[Main] Manual kiosk background request received`);
+			sendKioskToBack();
+			console.log(`[Main] Kiosk sent to background successfully`);
+			event.sender.send("kioskSentToBackground", {
+				success: true,
+				message: "Kiosk sent to background",
+			});
+		} catch (error) {
+			console.error(`[Main] Failed to send kiosk to background:`, error);
+			event.sender.send("kioskSentToBackground", {
+				success: false,
+				message: `Failed to send kiosk to background: ${error.message}`,
 			});
 		}
 	});
@@ -664,7 +1056,7 @@ const createWindow = () => {
 			contextIsolation: true, // Security: Enable context isolation
 			preload: path.join(__dirname, "../preload/preload.js"), // Path to preload script
 			// Additional security settings
-			devTools: false, // Disable DevTools in production
+			devTools: isDevelopment, // Enable DevTools only in development mode
 			webSecurity: true, // Enable web security features
 			allowRunningInsecureContent: false, // Prevents loading HTTP resources on HTTPS pages
 			sandbox: false, // Disable sandbox temporarily to allow the preload script to access Node modules
@@ -673,23 +1065,27 @@ const createWindow = () => {
 		// Kiosk mode configuration
 		kiosk: isKioskMode,
 		fullscreen: isKioskMode,
-		autoHideMenuBar: true, // Hide menu bar in all modes
+		autoHideMenuBar: !isDevelopment, // Show menu bar in development mode
 		frame: !isKioskMode, // Show frame only in development mode
 		resizable: !isKioskMode, // Allow resize only in development mode
-		skipTaskbar: isKioskMode, // Hide from taskbar in kiosk mode
+		skipTaskbar: false, // Don't hide from taskbar - we want it visible but unfocused
 	});
 
 	// Load the index.html of the app
 	mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
 
 	// Disable menu in production/kiosk mode
-	Menu.setApplicationMenu(null);
+	if (isKioskMode) {
+		Menu.setApplicationMenu(null);
+	}
 
 	// Disable context menu in production mode
-	mainWindow.webContents.on("context-menu", (e, params) => {
-		e.preventDefault();
-		// Block context menu
-	});
+	if (isKioskMode) {
+		mainWindow.webContents.on("context-menu", (e, params) => {
+			e.preventDefault();
+			// Block context menu
+		});
+	}
 
 	// Emitted when the window is closed
 	mainWindow.on("closed", () => {

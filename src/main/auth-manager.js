@@ -143,88 +143,17 @@ class AuthManager {
 	 * Load the persisted session from disk
 	 */
 	async loadPersistedSession() {
+		// DO NOT auto-restore sessions on startup
+		// This ensures the app always starts logged out
 		try {
-			// Check if session file exists
-			if (!fs.existsSync(this.sessionPath)) {
-				return;
-			}
-
-			// Read and parse the session file
-			const sessionData = JSON.parse(fs.readFileSync(this.sessionPath, "utf8"));
-
-			// Check if session is too old (24 hours)
-			const MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-			if (Date.now() - sessionData.timestamp > MAX_AGE) {
-				fs.unlinkSync(this.sessionPath);
-				return;
-			}
-
-			// Try to restore auth session
-			if (sessionData.authSession) {
-				try {
-					// Set session in Supabase
-					const { data, error } = await supabase.auth.setSession({
-						access_token: sessionData.authSession.access_token,
-						refresh_token: sessionData.authSession.refresh_token,
-					});
-
-					if (error) {
-						fs.unlinkSync(this.sessionPath);
-						return;
-					}
-
-					// Verify user data is still valid
-					const { data: profileData, error: profileError } = await supabase
-						.from("profiles")
-						.select("*")
-						.eq("id", sessionData.userData.id)
-						.single();
-
-					if (profileError) {
-						fs.unlinkSync(this.sessionPath);
-						return;
-					}
-
-					// Set user data with updated profile
-					this.userData = {
-						...sessionData.userData,
-						...profileData,
-					};
-
-					// Set active session if it exists
-					if (sessionData.activeSession) {
-						// Check if session is still active
-						const { data: sessionCheck, error: sessionError } = await supabase
-							.from("sessions")
-							.select("*")
-							.eq("id", sessionData.activeSession.id)
-							.eq("is_active", true)
-							.single();
-
-						if (!sessionError && sessionCheck) {
-							this.activeSession = sessionCheck;
-						}
-					}
-
-					// Set up realtime subscriptions
-					this.setupRealtimeSubscriptions();
-
-					// Notify listeners that session was restored
-					this.notifyListeners({
-						type: "SESSION_RESTORED",
-						data: this.userData,
-					});
-				} catch (error) {
-					// Error restoring session
-					fs.unlinkSync(this.sessionPath);
-				}
-			}
-		} catch (error) {
-			// Error loading persisted session
+			// Check if session file exists and remove it
 			if (fs.existsSync(this.sessionPath)) {
 				fs.unlinkSync(this.sessionPath);
 			}
+		} catch (error) {
+			// Error removing persisted session
 		}
+		// Don't restore any session data - app should start logged out
 	}
 
 	/**

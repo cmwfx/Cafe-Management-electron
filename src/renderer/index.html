@@ -6,148 +6,503 @@
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WiFi Cafe - Login</title>
+    <title>Gaming Cafe - Kiosk System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Force dark mode styling */
-        html,
-        body {
-            background-color: #121212 !important;
-            color: #ffffff !important;
-        }
-
-        :root {
-            --primary-color: #6c63ff;
-            --primary-hover: #5a52d5;
-            --bg-dark: #121212;
-            --card-dark: #1e1e1e;
-            --text-primary: #ffffff;
-            --text-secondary: #b3b3b3;
-            --error-color: #ff5252;
-            --success-color: #4caf50;
-            --input-bg: #2c2c2c;
-            --input-border: #3f3f3f;
-            --button-hover: #2196f3;
-        }
-
-        /* Reset and Base Styles */
-        * {
+        /* Modern CSS Reset */
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box !important;
             margin: 0 !important;
             padding: 0 !important;
         }
 
+        /* CSS Custom Properties */
+        :root {
+            /* Modern Color Palette */
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --primary-color: #667eea;
+            --primary-hover: #5a6fd8;
+            --secondary-color: #764ba2;
+
+            /* Background */
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #16213e;
+
+            /* Glass Effects */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+            /* Text Colors */
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.5);
+
+            /* Status Colors */
+            --success-color: #4ade80;
+            --warning-color: #fbbf24;
+            --error-color: #f87171;
+
+            /* Spacing */
+            --space-xs: 0.5rem;
+            --space-sm: 1rem;
+            --space-md: 1.5rem;
+            --space-lg: 2rem;
+            --space-xl: 3rem;
+
+            /* Border Radius */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --radius-xl: 24px;
+        }
+
+        /* Base Styles */
         html,
         body {
             height: 100% !important;
             width: 100% !important;
+            font-family: 'Inter', -apple-system, system-ui, sans-serif !important;
+            background: var(--bg-primary) !important;
+            color: var(--text-primary) !important;
+            line-height: 1.6 !important;
+            overflow-x: hidden !important;
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif !important;
-            background-color: var(--bg-dark) !important;
-            color: var(--text-primary) !important;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.15) 0%, transparent 50%),
+                var(--bg-primary) !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: center !important;
             align-items: center !important;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            transition: background 0.3s ease;
+            min-height: 100vh !important;
+            transition: all 0.3s ease !important;
         }
 
+        /* Glass Container */
         .container {
             width: 90% !important;
-            max-width: 400px !important;
-            padding: 30px !important;
-            background-color: var(--card-dark) !important;
-            border-radius: 12px !important;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+            max-width: 420px !important;
+            padding: var(--space-xl) !important;
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid var(--glass-border) !important;
+            border-radius: var(--radius-xl) !important;
+            box-shadow: var(--glass-shadow) !important;
+            transition: all 0.3s ease !important;
         }
 
+        .container:hover {
+            border-color: rgba(255, 255, 255, 0.15) !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .full-container {
+            width: 95% !important;
+            max-width: 1400px !important;
+            padding: var(--space-xl) !important;
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid var(--glass-border) !important;
+            border-radius: var(--radius-xl) !important;
+            box-shadow: var(--glass-shadow) !important;
+        }
+
+        /* Typography */
         .header {
             text-align: center !important;
-            margin-bottom: 30px !important;
+            margin-bottom: var(--space-xl) !important;
         }
 
         .logo-text {
-            font-size: 32px !important;
+            font-size: 2.5rem !important;
             font-weight: 700 !important;
-            margin-bottom: 15px !important;
+            background: var(--primary-gradient) !important;
+            background-clip: text !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            margin-bottom: var(--space-md) !important;
+            text-shadow: none !important;
         }
 
         h1 {
-            font-size: 24px !important;
+            font-size: 1.75rem !important;
             font-weight: 600 !important;
-            margin-bottom: 10px !important;
-            color: var(--primary-color) !important;
+            margin-bottom: var(--space-sm) !important;
+            color: var(--text-primary) !important;
         }
 
         h2 {
             color: var(--text-primary) !important;
-            font-size: 20px !important;
+            font-size: 1.5rem !important;
             font-weight: 500 !important;
-            margin-bottom: 20px !important;
+            margin-bottom: var(--space-lg) !important;
         }
 
         /* Form Elements */
         .form-group {
-            margin-bottom: 20px !important;
+            margin-bottom: var(--space-lg) !important;
         }
 
         label {
             display: block !important;
-            margin-bottom: 8px !important;
+            margin-bottom: var(--space-xs) !important;
             font-weight: 500 !important;
             color: var(--text-secondary) !important;
-            font-size: 14px !important;
+            font-size: 0.875rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
         }
 
         input[type="text"],
         input[type="password"],
-        input[type="email"] {
+        input[type="email"],
+        input[type="number"] {
             width: 100% !important;
-            padding: 12px !important;
-            border: 1px solid var(--input-border) !important;
-            border-radius: 8px !important;
-            background-color: var(--input-bg) !important;
+            padding: 1rem !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: var(--radius-md) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(10px) !important;
             color: var(--text-primary) !important;
-            font-size: 16px !important;
+            font-size: 1rem !important;
+            font-family: inherit !important;
+            transition: all 0.2s ease !important;
         }
 
         input:focus {
             border-color: var(--primary-color) !important;
             outline: none !important;
-            box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.25) !important;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
         }
 
+        /* Modern Buttons */
         button {
             width: 100% !important;
-            background-color: var(--primary-color) !important;
+            background: var(--primary-gradient) !important;
             color: white !important;
             border: none !important;
-            padding: 14px !important;
-            border-radius: 8px !important;
+            padding: 1rem 1.5rem !important;
+            border-radius: var(--radius-md) !important;
             cursor: pointer !important;
-            font-size: 16px !important;
-            font-weight: 500 !important;
-            transition: all 0.2s !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            font-family: inherit !important;
+            transition: all 0.2s ease !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+
+        button::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%) !important;
+            opacity: 0 !important;
+            transition: opacity 0.2s ease !important;
+        }
+
+        button:hover::before {
+            opacity: 1 !important;
         }
 
         button:hover {
-            background-color: var(--primary-hover) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3) !important;
+        }
+
+        button:active {
+            transform: translateY(0) !important;
         }
 
         button:disabled {
-            background-color: #444444 !important;
+            background: rgba(255, 255, 255, 0.1) !important;
             cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Session Header */
+        .session-header {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-bottom: var(--space-xl) !important;
+            padding: var(--space-lg) !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: var(--radius-lg) !important;
+            gap: var(--space-lg) !important;
+        }
+
+        .session-info {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: var(--space-xs) !important;
+        }
+
+        .session-info>div:first-child {
+            font-size: 1.125rem !important;
+            font-weight: 600 !important;
+            color: var(--text-primary) !important;
+        }
+
+        .session-info>div:nth-child(2) {
+            color: var(--text-secondary) !important;
+            font-size: 0.875rem !important;
+        }
+
+        .session-actions {
+            display: flex !important;
+            gap: var(--space-sm) !important;
+            flex-wrap: wrap !important;
+        }
+
+        .session-actions button {
+            width: auto !important;
+            padding: 0.75rem 1.25rem !important;
+            font-size: 0.875rem !important;
+            white-space: nowrap !important;
+        }
+
+        .time-remaining {
+            font-size: 2rem !important;
+            font-weight: 700 !important;
+            color: var(--success-color) !important;
+            font-variant-numeric: tabular-nums !important;
+            text-shadow: 0 0 20px rgba(74, 222, 128, 0.3) !important;
+        }
+
+        .time-expired {
+            color: var(--error-color) !important;
+            text-shadow: 0 0 20px rgba(248, 113, 113, 0.3) !important;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+            gap: var(--space-lg) !important;
+            margin-bottom: var(--space-xl) !important;
+        }
+
+        .credit-display {
+            text-align: center !important;
+            padding: var(--space-xl) !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: var(--radius-lg) !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .credit-display:hover {
+            border-color: rgba(255, 255, 255, 0.15) !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .credit-amount {
+            font-size: 3rem !important;
+            font-weight: 700 !important;
+            background: var(--primary-gradient) !important;
+            background-clip: text !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            margin-bottom: var(--space-xs) !important;
+            font-variant-numeric: tabular-nums !important;
+        }
+
+        .credit-display>div:last-child {
+            color: var(--text-secondary) !important;
+            font-size: 0.875rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            font-weight: 500 !important;
+        }
+
+        /* Session Duration Options */
+        .session-options {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+            gap: var(--space-md) !important;
+            margin-bottom: var(--space-xl) !important;
+        }
+
+        .session-option {
+            padding: var(--space-lg) !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: var(--radius-md) !important;
+            text-align: center !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .session-option:hover {
+            border-color: var(--primary-color) !important;
+            background: rgba(102, 126, 234, 0.1) !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .session-option.selected {
+            border-color: var(--primary-color) !important;
+            background: var(--primary-gradient) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2) !important;
+        }
+
+        .session-duration {
+            font-size: 1.125rem !important;
+            font-weight: 600 !important;
+            margin-bottom: var(--space-xs) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .session-price {
+            color: var(--text-secondary) !important;
+            font-size: 0.875rem !important;
+        }
+
+        .session-option.selected .session-price {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        /* App Grid */
+        .app-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+            gap: var(--space-lg) !important;
+            margin-top: var(--space-xl) !important;
+        }
+
+        .app-card {
+            background: rgba(255, 255, 255, 0.03) !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: var(--radius-lg) !important;
+            padding: var(--space-xl) !important;
+            text-align: center !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+
+        .app-card::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: var(--primary-gradient) !important;
+            opacity: 0 !important;
+            transition: opacity 0.3s ease !important;
+        }
+
+        .app-card:hover::before {
+            opacity: 0.1 !important;
+        }
+
+        .app-card:hover {
+            border-color: var(--primary-color) !important;
+            transform: translateY(-8px) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        .app-icon {
+            font-size: 4rem !important;
+            margin-bottom: var(--space-md) !important;
+            position: relative !important;
+            z-index: 1 !important;
+        }
+
+        .app-name {
+            font-size: 1.25rem !important;
+            font-weight: 600 !important;
+            margin-bottom: var(--space-xs) !important;
+            color: var(--text-primary) !important;
+            position: relative !important;
+            z-index: 1 !important;
+        }
+
+        .app-description {
+            font-size: 0.875rem !important;
+            color: var(--text-secondary) !important;
+            position: relative !important;
+            z-index: 1 !important;
+        }
+
+        /* Hide Kiosk Button - Special Styling */
+        #hide-kiosk-button {
+            width: auto !important;
+            padding: 0.5rem 1rem !important;
+            font-size: 0.75rem !important;
+            margin-top: var(--space-sm) !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: var(--radius-sm) !important;
+            color: var(--text-secondary) !important;
+            font-weight: 500 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+        }
+
+        #hide-kiosk-button:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            color: var(--text-primary) !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .error-message {
+            color: var(--error-color) !important;
+            margin-top: var(--space-md) !important;
+            font-size: 0.875rem !important;
+            text-align: center !important;
+            padding: var(--space-sm) !important;
+            background: rgba(248, 113, 113, 0.1) !important;
+            border: 1px solid rgba(248, 113, 113, 0.2) !important;
+            border-radius: var(--radius-sm) !important;
+        }
+
+        .success-message {
+            color: var(--success-color) !important;
+            margin-top: var(--space-md) !important;
+            font-size: 0.875rem !important;
+            text-align: center !important;
+            padding: var(--space-sm) !important;
+            background: rgba(74, 222, 128, 0.1) !important;
+            border: 1px solid rgba(74, 222, 128, 0.2) !important;
+            border-radius: var(--radius-sm) !important;
         }
 
         .auth-switcher {
-            margin-top: 20px !important;
+            margin-top: var(--space-lg) !important;
             text-align: center !important;
             color: var(--text-secondary) !important;
-            font-size: 15px !important;
+            font-size: 0.875rem !important;
         }
 
         .auth-switcher a {
@@ -155,600 +510,309 @@
             cursor: pointer !important;
             text-decoration: none !important;
             font-weight: 500 !important;
+            transition: color 0.2s ease !important;
         }
 
-        .error-message {
-            color: var(--error-color) !important;
-            margin-top: 15px !important;
-            font-size: 14px !important;
-            text-align: center !important;
-        }
-
-        .success-message {
-            color: var(--success-color) !important;
-            margin-top: 15px !important;
-            font-size: 14px !important;
-            text-align: center !important;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        footer {
-            margin-top: 30px !important;
-            text-align: center !important;
-            color: var(--text-secondary) !important;
-            font-size: 12px !important;
-        }
-
-        /* Loading animation */
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1) !important;
-            width: 40px !important;
-            height: 40px !important;
-            border-radius: 50% !important;
-            border-left-color: var(--primary-color) !important;
-            animation: spin 1s linear infinite !important;
-            margin: 20px auto !important;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Loading view */
-        #loading-view {
-            text-align: center !important;
-        }
-
-        #loading-view p {
-            margin: 10px 0 !important;
-            color: var(--text-secondary) !important;
-        }
-
-        /* Dashboard elements */
-        .user-info-bar {
-            display: flex !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            margin-bottom: 20px !important;
-            padding: 10px 0 !important;
-            border-bottom: 1px solid var(--input-border) !important;
-        }
-
-        .user-info-bar .user-info {
-            font-weight: bold !important;
-        }
-
-        .user-info-bar .credit-info {
-            color: var(--success-color) !important;
-        }
-
-        /* Dashboard Stats */
-        .dashboard-stats {
-            display: flex !important;
-            justify-content: center !important;
-            margin-bottom: 30px !important;
-        }
-
-        .stat-box {
-            background: linear-gradient(135deg, #6c63ff 0%, #5a52d5 100%) !important;
-            border-radius: 10px !important;
-            padding: 20px !important;
-            text-align: center !important;
-            width: 100% !important;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
-        }
-
-        .stat-label {
-            font-size: 16px !important;
-            color: rgba(255, 255, 255, 0.8) !important;
-            margin-bottom: 10px !important;
-        }
-
-        .stat-value {
-            font-size: 36px !important;
-            font-weight: bold !important;
-            color: white !important;
-        }
-
-        /* Session Selection */
-        .session-selection {
-            background-color: rgba(30, 30, 30, 0.7) !important;
-            border-radius: 10px !important;
-            padding: 20px !important;
-            margin-bottom: 30px !important;
-        }
-
-        .session-selection h3 {
-            color: var(--primary-color) !important;
-            margin-bottom: 15px !important;
-            font-size: 20px !important;
-        }
-
-        .session-selection p {
-            color: var(--text-secondary) !important;
-            margin-bottom: 20px !important;
-        }
-
-        .duration-options {
-            display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 10px !important;
-            margin-bottom: 20px !important;
-        }
-
-        .duration-option {
-            background-color: var(--input-bg) !important;
-            border: 1px solid var(--input-border) !important;
-            border-radius: 8px !important;
-            padding: 15px !important;
-            text-align: center !important;
-            cursor: pointer !important;
-            transition: all 0.2s !important;
-        }
-
-        .duration-option:hover {
-            border-color: var(--primary-color) !important;
-            transform: translateY(-2px) !important;
-        }
-
-        .duration-option.selected {
-            background-color: rgba(108, 99, 255, 0.2) !important;
-            border-color: var(--primary-color) !important;
-        }
-
-        .duration-title {
-            font-weight: bold !important;
-            margin-bottom: 5px !important;
-        }
-
-        .duration-price {
-            color: var(--text-secondary) !important;
-            font-size: 14px !important;
-        }
-
-        .custom-duration {
-            background-color: var(--input-bg) !important;
-            border-radius: 8px !important;
-            padding: 15px !important;
-            margin-bottom: 20px !important;
-        }
-
-        .custom-duration h4 {
-            margin-bottom: 10px !important;
-            color: var(--text-secondary) !important;
-        }
-
-        .custom-duration-controls {
-            display: flex !important;
-            align-items: center !important;
-        }
-
-        .custom-duration-controls input {
-            width: 80px !important;
-            padding: 8px !important;
-            border-radius: 4px !important;
-            border: 1px solid var(--input-border) !important;
-            background-color: var(--card-dark) !important;
-            color: var(--text-primary) !important;
-        }
-
-        .custom-duration-controls .unit {
-            margin: 0 10px !important;
-            color: var(--text-secondary) !important;
-        }
-
-        #custom-price {
-            margin-left: auto !important;
-            font-weight: bold !important;
-            color: var(--primary-color) !important;
-        }
-
-        /* Transaction History */
-        .transaction-history {
-            background-color: rgba(30, 30, 30, 0.7) !important;
-            border-radius: 10px !important;
-            padding: 20px !important;
-            margin-bottom: 20px !important;
-        }
-
-        .transaction-history h3 {
-            color: var(--primary-color) !important;
-            margin-bottom: 15px !important;
-            font-size: 20px !important;
-        }
-
-        .transaction-list {
-            max-height: 200px !important;
-            overflow-y: auto !important;
-        }
-
-        .transaction-item {
-            padding: 10px !important;
-            border-bottom: 1px solid var(--input-border) !important;
-            display: flex !important;
-            justify-content: space-between !important;
-        }
-
-        .transaction-empty {
-            color: var(--text-secondary) !important;
-            text-align: center !important;
-            padding: 20px !important;
-        }
-
-        .transaction-date {
-            font-size: 12px !important;
-            color: var(--text-secondary) !important;
-        }
-
-        .transaction-amount {
-            font-weight: bold !important;
-        }
-
-        .transaction-amount.positive {
-            color: var(--success-color) !important;
-        }
-
-        .transaction-amount.negative {
-            color: var(--error-color) !important;
-        }
-
-        .logout-container {
-            margin-top: 20px !important;
-        }
-
-        /* Session View Updates */
-        #session-view {
-            text-align: center !important;
-        }
-
-        .time-remaining {
-            font-size: 48px !important;
-            font-weight: bold !important;
-            margin: 30px 0 !important;
-            color: var(--primary-color) !important;
-        }
-
-        .session-info {
-            margin-bottom: 20px !important;
-        }
-
-        .session-actions {
-            display: flex !important;
-            justify-content: center !important;
-            gap: 10px !important;
-            margin-top: 30px !important;
-        }
-
-        /* Button Variations */
-        .secondary-button {
-            background-color: #3a3a3a !important;
-            color: var(--text-primary) !important;
-            border: 1px solid var(--input-border) !important;
-        }
-
-        .secondary-button:hover {
-            background-color: #4a4a4a !important;
-        }
-
-        .warning-button {
-            background-color: #d32f2f !important;
-            color: white !important;
-        }
-
-        .warning-button:hover {
-            background-color: #b71c1c !important;
-        }
-
-        /* Session Extension */
-        .session-extension {
-            background-color: rgba(30, 30, 30, 0.7) !important;
-            border-radius: 10px !important;
-            padding: 20px !important;
-            margin-bottom: 30px !important;
-            margin-top: 30px !important;
-        }
-
-        .session-extension h3 {
-            color: var(--primary-color) !important;
-            margin-bottom: 15px !important;
-            font-size: 20px !important;
+        .auth-switcher a:hover {
+            color: var(--primary-hover) !important;
         }
 
         /* Session Expired Overlay */
         .session-expired-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background-color: rgba(15, 15, 35, 0.95) !important;
+            backdrop-filter: blur(20px) !important;
+            justify-content: center !important;
+            align-items: center !important;
+            z-index: 9999 !important;
         }
 
-        .expired-content {
-            background-color: var(--card-dark);
-            padding: 2rem;
-            border-radius: 8px;
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
+        .session-expired-overlay:not(.hidden) {
+            display: flex !important;
         }
 
-        .expired-content h2 {
-            color: var(--error-color);
-            font-size: 2rem;
-            margin-bottom: 1rem;
+        .expired-modal {
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid var(--glass-border) !important;
+            padding: var(--space-xl) !important;
+            border-radius: var(--radius-xl) !important;
+            text-align: center !important;
+            max-width: 500px !important;
+            width: 90% !important;
+            box-shadow: var(--glass-shadow) !important;
         }
 
-        .expired-content p {
-            margin-bottom: 2rem;
-            font-size: 1.2rem;
+        .expired-title {
+            font-size: 2rem !important;
+            color: var(--error-color) !important;
+            margin-bottom: var(--space-lg) !important;
+            font-weight: 600 !important;
         }
 
-        .expired-content button {
-            padding: 0.75rem 1.5rem;
-            font-size: 1.1rem;
-            margin-top: 1rem;
-            margin-bottom: 1rem;
+        .expired-actions {
+            display: flex !important;
+            gap: var(--space-md) !important;
+            margin-top: var(--space-xl) !important;
         }
 
-        .expired-content .session-extension {
-            margin: 1rem 0;
-            padding: 1.5rem;
-            background-color: rgba(30, 30, 30, 0.7);
-            border-radius: 10px;
+        .expired-actions button {
+            flex: 1 !important;
         }
 
-        .expired-content .custom-input-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 1.5rem;
-            margin-bottom: 1rem;
+        /* Loading Animation */
+        .spinner {
+            width: 50px !important;
+            height: 50px !important;
+            border: 3px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 50% !important;
+            border-top-color: var(--primary-color) !important;
+            animation: spin 1s linear infinite !important;
+            margin: var(--space-lg) auto !important;
         }
 
-        .expired-content .custom-input-container label {
-            margin-bottom: 0.5rem;
-            font-weight: bold;
-            color: var(--primary-color);
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
-        .expired-content .custom-input-container input {
-            width: 120px;
-            padding: 0.5rem;
-            text-align: center;
-            font-size: 1.1rem;
-            border-radius: 4px;
-            border: 1px solid var(--input-border);
-            background-color: var(--input-bg);
-            color: var(--text-primary);
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .full-container {
+                width: 95% !important;
+                padding: var(--space-lg) !important;
+            }
+
+            .session-header {
+                flex-direction: column !important;
+                text-align: center !important;
+                gap: var(--space-md) !important;
+            }
+
+            .session-actions {
+                justify-content: center !important;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            .app-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            .session-options {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
         }
 
-        .expired-content .warning-button {
-            background-color: #d32f2f;
-            color: white;
-            margin-top: 1.5rem;
-        }
+        @media (max-width: 480px) {
+            .container {
+                width: 95% !important;
+                padding: var(--space-lg) !important;
+            }
 
-        .expired-content .warning-button:hover {
-            background-color: #b71c1c;
-        }
+            .logo-text {
+                font-size: 2rem !important;
+            }
 
-        .expired-content .duration-options {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 1rem;
-        }
+            h1 {
+                font-size: 1.5rem !important;
+            }
 
-        /* Fullscreen mode styling */
-        body.fullscreen-mode {
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            margin: 0;
-            padding: 0;
-        }
-
-        body.fullscreen-mode .session-expired-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 99999;
-            background-color: rgba(0, 0, 0, 0.95);
-        }
-
-        body.fullscreen-mode .expired-content {
-            max-width: 600px;
-            padding: 3rem;
-        }
-
-        body.fullscreen-mode .expired-content h2 {
-            font-size: 2.5rem;
+            .session-options {
+                grid-template-columns: 1fr !important;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
+    <!-- Login View -->
+    <div id="login-view" class="container">
         <div class="header">
-            <div class="logo-text">☕ WiFi Cafe</div>
-            <h1>Cafe Management System</h1>
+            <div class="logo-text">🎮 Gaming Cafe</div>
+            <h1>Welcome Back</h1>
         </div>
 
-        <!-- Loading View -->
-        <div id="loading-view" class="hidden">
-            <h2>Loading</h2>
-            <div class="spinner"></div>
-            <p>Checking for existing session...</p>
-        </div>
-
-        <!-- Login Form -->
-        <div id="login-view">
-            <h2>Login</h2>
+        <form id="login-form">
             <div class="form-group">
-                <label for="login-email">Email</label>
-                <input type="email" id="login-email" placeholder="Enter your email">
+                <label for="login-username">Email</label>
+                <input type="email" id="login-username" name="username" required>
             </div>
+
             <div class="form-group">
                 <label for="login-password">Password</label>
-                <input type="password" id="login-password" placeholder="Enter your password">
+                <input type="password" id="login-password" name="password" required>
             </div>
-            <button id="login-button">Login</button>
-            <div id="login-message" class="error-message hidden"></div>
-            <div class="auth-switcher">
-                Don't have an account? <a id="switch-to-signup">Sign up</a>
-            </div>
+
+            <button type="submit" id="login-button">Login</button>
+            <div id="login-message" class="hidden"></div>
+        </form>
+
+        <div class="auth-switcher">
+            Don't have an account? <a href="#" id="show-signup">Sign up here</a>
         </div>
-
-        <!-- Signup Form - Hidden by default -->
-        <div id="signup-view" class="hidden">
-            <h2>Create Account</h2>
-            <div class="form-group">
-                <label for="signup-email">Email</label>
-                <input type="email" id="signup-email" placeholder="Enter your email">
-            </div>
-            <div class="form-group">
-                <label for="signup-username">Username</label>
-                <input type="text" id="signup-username" placeholder="Choose a username">
-            </div>
-            <div class="form-group">
-                <label for="signup-password">Password</label>
-                <input type="password" id="signup-password" placeholder="Create a password">
-            </div>
-            <div class="form-group">
-                <label for="signup-confirm-password">Confirm Password</label>
-                <input type="password" id="signup-confirm-password" placeholder="Confirm your password">
-            </div>
-            <button id="signup-button">Create Account</button>
-            <div id="signup-message" class="error-message hidden"></div>
-            <div class="auth-switcher">
-                Already have an account? <a id="switch-to-login">Login</a>
-            </div>
-        </div>
-
-        <!-- Dashboard View -->
-        <div id="dashboard-view" class="hidden">
-            <div class="user-info-bar">
-                <span id="user-info">User</span>
-                <span id="credit-display">0 credits</span>
-            </div>
-            <h2>Welcome to WiFi Cafe</h2>
-
-            <div class="dashboard-stats">
-                <div class="stat-box">
-                    <div class="stat-label">Your Credits</div>
-                    <div id="dashboard-credits" class="stat-value">0</div>
-                </div>
-            </div>
-
-            <div class="session-selection">
-                <h3>Start New Session</h3>
-                <p>Select a duration for your session:</p>
-
-                <div class="duration-options">
-                    <div class="duration-option" data-minutes="30" data-credits="30">
-                        <div class="duration-title">30 Minutes</div>
-                        <div class="duration-price">30 Credits</div>
-                    </div>
-                    <div class="duration-option" data-minutes="60" data-credits="60">
-                        <div class="duration-title">1 Hour</div>
-                        <div class="duration-price">60 Credits</div>
-                    </div>
-                    <div class="duration-option" data-minutes="120" data-credits="120">
-                        <div class="duration-title">2 Hours</div>
-                        <div class="duration-price">120 Credits</div>
-                    </div>
-                </div>
-
-                <div class="custom-duration">
-                    <h4>Custom Duration</h4>
-                    <div class="custom-duration-controls">
-                        <input type="number" id="custom-duration" min="15" max="480" step="15" value="15">
-                        <span class="unit">minutes</span>
-                        <span id="custom-price">0 credits</span>
-                    </div>
-                </div>
-
-                <button id="start-session-btn" disabled>Start Session</button>
-                <div id="session-message" class="error-message hidden"></div>
-            </div>
-
-            <div class="transaction-history">
-                <h3>Recent Transactions</h3>
-                <div id="transaction-list" class="transaction-list">
-                    <div class="transaction-empty">No recent transactions</div>
-                </div>
-            </div>
-
-            <div class="form-group logout-container">
-                <button id="logout-button">Logout</button>
-            </div>
-        </div>
-
-        <!-- Session View -->
-        <div id="session-view" class="hidden">
-            <div class="user-info-bar">
-                <span id="session-user-info">User</span>
-                <span id="session-credit-display">0 credits</span>
-            </div>
-            <h2>Active Session</h2>
-
-            <div class="time-remaining" id="time-remaining">00:00:00</div>
-
-            <div class="session-info">
-                <p>Your session will end at <span id="session-end-time">--:--</span></p>
-            </div>
-
-            <div class="session-extension">
-                <h3>Extend Your Session</h3>
-                <p>Add more time to your current session:</p>
-
-                <div class="duration-options">
-                    <div class="duration-option" data-minutes="15" data-credits="15">
-                        <div class="duration-title">15 Minutes</div>
-                        <div class="duration-price">15 Credits</div>
-                    </div>
-                    <div class="duration-option" data-minutes="30" data-credits="30">
-                        <div class="duration-title">30 Minutes</div>
-                        <div class="duration-price">30 Credits</div>
-                    </div>
-                    <div class="duration-option" data-minutes="60" data-credits="60">
-                        <div class="duration-title">1 Hour</div>
-                        <div class="duration-price">60 Credits</div>
-                    </div>
-                </div>
-
-                <button id="extend-session-btn" disabled>Extend Session</button>
-                <div id="extension-message" class="error-message hidden"></div>
-            </div>
-
-            <div class="session-actions">
-                <button id="minimize-btn" class="secondary-button">Minimize</button>
-                <button id="end-session-btn" class="warning-button">End Session</button>
-            </div>
-        </div>
-
     </div>
 
-    <footer>
-        <p>WiFi Cafe Management System &copy; 2025</p>
-    </footer>
+    <!-- Signup View -->
+    <div id="signup-view" class="container hidden">
+        <div class="header">
+            <div class="logo-text">🎮 Gaming Cafe</div>
+            <h1>Create Account</h1>
+        </div>
+
+        <form id="signup-form">
+            <div class="form-group">
+                <label for="signup-username">Email</label>
+                <input type="email" id="signup-username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="signup-display-name">Display Name</label>
+                <input type="text" id="signup-display-name" name="display_name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="signup-password">Password</label>
+                <input type="password" id="signup-password" name="password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="signup-confirm-password">Confirm Password</label>
+                <input type="password" id="signup-confirm-password" name="confirm_password" required>
+            </div>
+
+            <button type="submit" id="signup-button">Create Account</button>
+            <div id="signup-message" class="hidden"></div>
+        </form>
+
+        <div class="auth-switcher">
+            Already have an account? <a href="#" id="show-login">Login here</a>
+        </div>
+    </div>
+
+    <!-- Dashboard View -->
+    <div id="dashboard-view" class="full-container hidden">
+        <div class="header">
+            <div class="logo-text">🎮 Gaming Cafe</div>
+            <h1>Welcome, <span id="user-display-name">User</span></h1>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="credit-display">
+                <div class="credit-amount" id="dashboard-credits">0</div>
+                <div>Credits Available</div>
+            </div>
+
+            <div class="credit-display">
+                <div class="credit-amount" id="time-remaining-display">--:--</div>
+                <div>Time Remaining</div>
+            </div>
+        </div>
+
+        <h2>Select Session Duration</h2>
+        <div class="session-options">
+            <div class="session-option" data-duration="1" data-credits="1">
+                <div class="session-duration">1 min</div>
+                <div class="session-price">1 credit</div>
+            </div>
+            <div class="session-option" data-duration="15" data-credits="15">
+                <div class="session-duration">15 min</div>
+                <div class="session-price">15 credits</div>
+            </div>
+            <div class="session-option" data-duration="30" data-credits="30">
+                <div class="session-duration">30 min</div>
+                <div class="session-price">30 credits</div>
+            </div>
+            <div class="session-option" data-duration="60" data-credits="60">
+                <div class="session-duration">1 hour</div>
+                <div class="session-price">60 credits</div>
+            </div>
+            <div class="session-option" data-duration="120" data-credits="120">
+                <div class="session-duration">2 hours</div>
+                <div class="session-price">120 credits</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="custom-duration">Or enter custom duration (minutes):</label>
+            <input type="number" id="custom-duration" min="1" value="1">
+            <div style="margin-top: 10px; color: var(--text-secondary);">
+                Cost: <span id="custom-price">1 credit</span>
+            </div>
+        </div>
+
+        <button id="start-session-button" disabled>Start Session</button>
+        <button id="logout-button" style="margin-top: 10px; background: rgba(255, 255, 255, 0.1);">Logout</button>
+
+        <div id="dashboard-message" class="hidden"></div>
+    </div>
+
+    <!-- Application Launcher View -->
+    <div id="app-launcher-view" class="full-container hidden">
+        <div class="session-header">
+            <div class="session-info">
+                <div>Welcome, <span id="session-user-name">User</span></div>
+                <div>Credits: <span id="session-credit-display">0</span></div>
+                <div class="time-remaining" id="session-time-remaining">--:--</div>
+                <button id="hide-kiosk-button">Hide Kiosk</button>
+            </div>
+            <div class="session-actions">
+                <button id="session-extend-button">Extend Session</button>
+                <button id="session-end-button" style="background: rgba(255, 255, 255, 0.1);">End Session</button>
+            </div>
+        </div>
+
+        <h2>Available Applications</h2>
+        <div class="app-grid">
+            <div class="app-card" data-app-path="C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe">
+                <div class="app-icon">🌐</div>
+                <div class="app-name">Microsoft Edge</div>
+                <div class="app-description">Web Browser</div>
+            </div>
+            <!-- More applications can be added here -->
+        </div>
+
+        <div id="app-launcher-message" class="hidden"></div>
+    </div>
+
+    <!-- Session Expired Overlay -->
+    <div id="session-expired-overlay" class="session-expired-overlay hidden">
+        <div class="expired-modal">
+            <div class="expired-title">⏰ Session Expired</div>
+            <p>Your session has ended. You can extend your session or logout to return to the login screen.</p>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="extension-duration">Extend session (minutes):</label>
+                <input type="number" id="extension-duration" min="1" value="1">
+                <div style="margin-top: 10px; color: var(--text-secondary);">
+                    Cost: <span id="extension-price">1 credit</span>
+                </div>
+            </div>
+
+            <div class="expired-actions">
+                <button id="extend-session-expired">Extend Session</button>
+                <button id="logout-expired" style="background: rgba(255, 255, 255, 0.1);">Logout</button>
+            </div>
+
+            <div id="expired-message" class="hidden"></div>
+        </div>
+    </div>
+
+    <!-- Loading View -->
+    <div id="loading-view" class="container hidden">
+        <div class="header">
+            <div class="logo-text">🎮 Gaming Cafe</div>
+            <h2>Loading...</h2>
+        </div>
+        <div class="spinner"></div>
+    </div>
 
     <script src="index.js"></script>
 </body>
